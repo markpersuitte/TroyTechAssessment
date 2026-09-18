@@ -1,0 +1,41 @@
+@model TroyTechAssessment.Pages.UnitTypes.UnitTypesModel
+@{
+    var isEditing = Model.Section == "editunittype";
+    var isOpen = Model.Section is "unittype" or "editunittype";
+}
+
+@if (isOpen)
+{
+    <div class="modal fade" id="unitTypeModal" tabindex="-1" aria-hidden="true" data-open="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post">
+                    <div class="modal-header">
+                        <h2 class="modal-title fs-5">@(isEditing ? "Edit unit type" : "Add unit type")</h2>
+                        <a class="btn-close" asp-page="/UnitTypes/UnitTypes" aria-label="Close"></a>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="Input.Action"
+                               value="@(isEditing ? "EditUnitType" : "AddUnitType")" />
+                        <input type="hidden" asp-for="Input.UnitTypeId" />
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                        <div class="mb-3">
+                            <label asp-for="Input.UnitTypeName" class="form-label">Name</label>
+                            <input asp-for="Input.UnitTypeName" class="form-control" />
+                        </div>
+                        <div class="form-check">
+                            <input asp-for="Input.Active" class="form-check-input" />
+                            <label asp-for="Input.Active" class="form-check-label">Active</label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <a class="btn btn-secondary" asp-page="/UnitTypes/UnitTypes">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            @(isEditing ? "Save changes" : "Add unit type")
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}

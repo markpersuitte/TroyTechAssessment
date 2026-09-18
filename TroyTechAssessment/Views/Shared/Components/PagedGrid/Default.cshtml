@@ -1,0 +1,47 @@
+@model TroyTechAssessment.ViewComponents.PagedGridViewComponent.PagedGridModel
+@using Microsoft.AspNetCore.WebUtilities
+
+@{
+    var hasPrevious = Model.Page > 1;
+    var hasNext = Model.Page < Model.TotalPages;
+    var previousUrl = QueryHelpers.AddQueryString(Model.RouteUrl, new Dictionary<string, string?>
+    {
+        ["pageNumber"] = (Model.Page - 1).ToString(),
+        ["pageSize"] = Model.PageSize.ToString()
+    });
+    var nextUrl = QueryHelpers.AddQueryString(Model.RouteUrl, new Dictionary<string, string?>
+    {
+        ["pageNumber"] = (Model.Page + 1).ToString(),
+        ["pageSize"] = Model.PageSize.ToString()
+    });
+}
+
+<div class="d-flex justify-content-between align-items-center mt-3">
+    <span class="text-muted">
+        Showing @Model.FirstItem - @Model.LastItem of @Model.TotalItems
+    </span>
+    <div class="d-flex align-items-end gap-3">
+        <form method="get" action="@Model.RouteUrl" class="d-flex align-items-end gap-2">
+            <input type="hidden" name="pageNumber" value="1" />
+            <div>
+                <label for="paged-grid-page-size" class="form-label mb-1">Items per page</label>
+                <select id="paged-grid-page-size" name="pageSize" class="form-select"
+                        onchange="this.form.submit()">
+                    @foreach (var size in new[] { 10, 25, 50 })
+                    {
+                        <option value="@size" selected="@(Model.PageSize == size)">@size</option>
+                    }
+                </select>
+            </div>
+        </form>
+        <nav aria-label="Page navigation">
+            <a class="btn btn-outline-secondary @(hasPrevious ? string.Empty : "disabled")"
+               href="@(hasPrevious ? previousUrl : "#")"
+               aria-disabled="@(!hasPrevious)">Previous</a>
+            <span class="mx-2">Page @Model.Page of @Model.TotalPages</span>
+            <a class="btn btn-outline-secondary @(hasNext ? string.Empty : "disabled")"
+               href="@(hasNext ? nextUrl : "#")"
+               aria-disabled="@(!hasNext)">Next</a>
+        </nav>
+    </div>
+</div>

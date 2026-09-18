@@ -1,0 +1,46 @@
+@model TroyTechAssessment.ViewComponents.UnitRowViewComponent.UnitRowModel
+@{
+    var unit = Model.Unit;
+    var hasHistory = Model.HasApplications || Model.HasLeases;
+    var modalText = hasHistory
+        ? $"This unit cannot be deleted because it has{(Model.HasApplications ? " applications" : string.Empty)}{(Model.HasApplications && Model.HasLeases ? " and" : string.Empty)}{(Model.HasLeases ? " leases" : string.Empty)}."
+        : $"Are you sure you want to delete{Environment.NewLine}{unit.Property.Name} unit {unit.Number}?";
+}
+
+<tr>
+    @if (User.IsInRole("Applicant"))
+    {
+        <td>
+            <a class="btn btn-sm btn-outline-success"
+               href="@Url.Page("/Apply/Apply", new { unitId = unit.Id })"
+               aria-label="Apply for unit @unit.Number">Apply</a>
+        </td>
+    }
+    <td title="@($"{unit.Property.StreetAddress} {unit.Property.City} {unit.Property.State}")">@unit.Property.Name</td>
+    <td>@unit.Number</td>
+    <td>@unit.Bedrooms</td>
+    <td>@unit.MonthlyRent.ToString("C")</td>
+    <td>@unit.UnitType.UnitTypeName</td>
+    @if (User.IsInRole("Manager"))
+    {
+        <td>
+            <a class="btn btn-sm btn-outline-primary"
+               data-modal-url="@Url.Action("Modal", "Units", new { id = unit.Id })"
+               aria-label="Edit unit @unit.Number">Edit</a>
+            <button type="button" class="btn btn-sm btn-outline-danger"
+                    data-bs-toggle="modal"
+                    data-bs-target="#deleteUnitModal-@unit.Id"
+                    aria-label="Delete unit @unit.Number">Delete</button>
+            @await Component.InvokeAsync("ConfirmModal", new
+            {
+                modalId = $"deleteUnitModal-{unit.Id}",
+                text = modalText,
+                action = "Delete",
+                unitId = unit.Id,
+                informational = hasHistory,
+                controller = "Units",
+                controllerAction = "Delete"
+            })
+        </td>
+    }
+</tr>

@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TroyTechAssessment", "TroyTechAssessment\TroyTechAssessment.csproj", "{4BFC65F5-D84B-49D1-B617-5EF7B7BA39E6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TroyTechAssessment.Tests", "TroyTechAssessment.Tests\TroyTechAssessment.Tests.csproj", "{E9502105-5844-4811-B7DF-3D8118153B10}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4BFC65F5-D84B-49D1-B617-5EF7B7BA39E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4BFC65F5-D84B-49D1-B617-5EF7B7BA39E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4BFC65F5-D84B-49D1-B617-5EF7B7BA39E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4BFC65F5-D84B-49D1-B617-5EF7B7BA39E6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E9502105-5844-4811-B7DF-3D8118153B10}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E9502105-5844-4811-B7DF-3D8118153B10}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E9502105-5844-4811-B7DF-3D8118153B10}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E9502105-5844-4811-B7DF-3D8118153B10}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,49 @@
+@model TroyTechAssessment.ViewComponents.ConfirmModalViewComponent.ConfirmModalModel
+
+<div class="modal fade" id="@Model.ModalId" tabindex="-1"
+     aria-labelledby="@(Model.ModalId)-label" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content text-start">
+            <div class="modal-header">
+                <h2 class="modal-title fs-5" id="@(Model.ModalId)-label">
+                    @(Model.Informational ? "Unable to delete item" : "Confirm action")
+                </h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+            </div>
+            <div class="modal-body">@Html.Raw(Model.Text.Replace(Environment.NewLine, "<br/>"))</div>
+            @if (Model.Informational)
+            {
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            }
+            else
+            {
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+                    @if (!string.IsNullOrWhiteSpace(Model.Controller))
+                    {
+                        <form method="post" asp-controller="@Model.Controller"
+                              asp-action="@(Model.ControllerAction ?? Model.Action)"
+                              data-server-modal-form>
+                            @await Html.PartialAsync(
+                                "Components/ConfirmModal/_ConfirmFields",
+                                Model)
+                        </form>
+                    }
+                    else
+                    {
+                        <form method="post" asp-page="@Model.Page">
+                            @await Html.PartialAsync(
+                                "Components/ConfirmModal/_ConfirmFields",
+                                Model)
+                        </form>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>

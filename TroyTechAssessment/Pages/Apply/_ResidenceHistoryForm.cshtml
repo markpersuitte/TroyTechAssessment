@@ -1,0 +1,63 @@
+@model TroyTechAssessment.Pages.ApplyModel.ResidenceHistoryInput
+@{
+    var index = ViewData["Index"]?.ToString() ?? "0";
+    var prefix = $"Input.ResidenceHistory[{index}]";
+    var fieldPrefix = $"Input_ResidenceHistory_{index}_";
+}
+
+<div class="residence-history-row border rounded p-3 mb-3">
+    <input type="hidden" name="Input.ResidenceHistory.Index" value="@index" />
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label" for="@(fieldPrefix)StreetAddress">Street address</label>
+            <input class="form-control" type="text" id="@(fieldPrefix)StreetAddress"
+                   name="@(prefix).StreetAddress" value="@Model.StreetAddress" required readonly="@((bool?)ViewData["IsReadOnly"] == true)" />
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="form-label" for="@(fieldPrefix)City">City</label>
+            <input class="form-control" type="text" id="@(fieldPrefix)City"
+                   name="@(prefix).City" value="@Model.City" required readonly="@((bool?)ViewData["IsReadOnly"] == true)" />
+        </div>
+        <div class="col-md-4 mb-3">
+            <label class="form-label" for="@(fieldPrefix)State">State</label>
+            <input class="form-control" type="text" id="@(fieldPrefix)State"
+                   name="@(prefix).State" value="@Model.State" required readonly="@((bool?)ViewData["IsReadOnly"] == true)" />
+        </div>
+        <div class="col-md-4 mb-3">
+            <label class="form-label" for="@(fieldPrefix)ZipCode">ZIP code</label>
+            <input class="form-control" type="text" id="@(fieldPrefix)ZipCode"
+                   name="@(prefix).ZipCode" value="@Model.ZipCode" required readonly="@((bool?)ViewData["IsReadOnly"] == true)" />
+        </div>
+        <div class="col-md-4 mb-3">
+            <label class="form-label" for="@(fieldPrefix)LandlordPhoneNumber">Landlord phone</label>
+            <input class="form-control" type="text" id="@(fieldPrefix)LandlordPhoneNumber"
+                   name="@(prefix).LandlordPhoneNumber" value="@Model.LandlordPhoneNumber" required readonly="@((bool?)ViewData["IsReadOnly"] == true)" />
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="form-label" for="@(fieldPrefix)LandlordFirstName">Landlord first name</label>
+            <input class="form-control" type="text" id="@(fieldPrefix)LandlordFirstName"
+                   name="@(prefix).LandlordFirstName" value="@Model.LandlordFirstName" required readonly="@((bool?)ViewData["IsReadOnly"] == true)" />
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="form-label" for="@(fieldPrefix)LandlordLastName">Landlord last name</label>
+            <input class="form-control" type="text" id="@(fieldPrefix)LandlordLastName"
+                   name="@(prefix).LandlordLastName" value="@Model.LandlordLastName" required readonly="@((bool?)ViewData["IsReadOnly"] == true)" />
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="form-label" for="@(fieldPrefix)MoveInDate">Move-in date</label>
+            <input class="form-control" type="date" id="@(fieldPrefix)MoveInDate"
+                   name="@(prefix).MoveInDate"
+                   value="@(Model.MoveInDate?.ToString("yyyy-MM-dd") ?? string.Empty)" required readonly="@((bool?)ViewData["IsReadOnly"] == true)" />
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="form-label" for="@(fieldPrefix)MoveOutDate">Move-out date</label>
+            <input class="form-control move-out-date" type="date" id="@(fieldPrefix)MoveOutDate"
+                   name="@(prefix).MoveOutDate"
+                   value="@(Model.MoveOutDate?.ToString("yyyy-MM-dd") ?? string.Empty)" readonly="@((bool?)ViewData["IsReadOnly"] == true)" />
+        </div>
+    </div>
+    @if ((bool?)ViewData["IsReadOnly"] != true)
+    {
+        <button type="button" class="btn btn-outline-danger remove-residence-history">Remove</button>
+    }
+</div>

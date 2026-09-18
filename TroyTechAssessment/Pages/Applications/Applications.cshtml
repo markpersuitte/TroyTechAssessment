@@ -1,0 +1,186 @@
+@page
+@using TroyTechAssessment.Helpers;
+@model TroyTechAssessment.Pages.Applications.ApplicationsModel
+@{
+    ViewData["Title"] = "Applications";
+}
+
+<h1>Applications</h1>
+
+<form method="get" class="mb-3">
+    <div class="row g-2 align-items-end">
+        <div class="col-md-3">
+            <label asp-for="SearchTerm" class="form-label">Search</label>
+            <input asp-for="SearchTerm" class="form-control" placeholder="Search all fields" />
+        </div>
+        <div class="col-md-3">
+            <label asp-for="StatusId" class="form-label">Status</label>
+            <select asp-for="StatusId" asp-items="Model.StatusOptions" class="form-select"></select>
+        </div>
+        <div class="col-md-3">
+            <label asp-for="PropertyId" class="form-label">Property</label>
+            <select asp-for="PropertyId" asp-items="Model.PropertyOptions" class="form-select"></select>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary">Filter</button>
+            <a asp-page="./Applications" class="btn btn-secondary">Clear</a>
+        </div>
+        <div class="col-md-2">
+            <label asp-for="Sort" class="form-label">Sort</label>
+            <select asp-for="Sort" class="form-select">
+                <option value="id">Newest</option>
+                <option value="applicant">Applicant</option>
+                <option value="property">Property</option>
+                <option value="status">Status</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label asp-for="Direction" class="form-label">Order</label>
+            <select asp-for="Direction" class="form-select">
+                <option value="desc">Descending</option>
+                <option value="asc">Ascending</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            @Html.LabelFor(model => model.MyClaims, "My Claims")
+            @Html.CheckBoxFor(model => model.MyClaims)
+        </div>
+    </div>
+</form>
+
+@if (Model.Applications.Count == 0)
+{
+    <p>No applications have been submitted.</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <th>Actions</th>
+                <th>Applicant</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Property</th>
+                <th>Unit</th>
+                <th>Status</th>
+                @if (User.IsInRole("Manager"))
+                {
+                    <th>Review queue</th>
+                }
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var application in Model.Applications)
+            {
+                <tr>
+                    <td>
+                        @if (User.IsInRole("Manager") && application.ApplicationStatus.Status.Equals("Submitted"))
+                        {
+                            @if (application.ClaimedByManagerId == Model.CurrentManagerId)
+                            {
+                                <a asp-page="/Apply/Apply" asp-route-unitId="@application.UnitId"
+                                   asp-route-applicationId="@application.Id"
+                                   class="btn btn-sm btn-primary">Manage</a>
+                            }
+                            else
+                            {
+                                <a asp-page="/Apply/Apply" asp-route-unitId="@application.UnitId"
+                                   asp-route-applicationId="@application.Id"
+                                   class="btn btn-sm btn-secondary">View</a>
+                            }
+                        }
+                        else if (User.IsInRole("Manager"))
+                        {
+                            <a asp-page="/Apply/Apply" asp-route-unitId="@application.UnitId"
+                               asp-route-applicationId="@application.Id"
+                               class="btn btn-sm btn-secondary">View</a>
+                        }
+                        else if (User.IsInRole("Applicant") &&
+                                 string.EqualsAny(application.ApplicationStatus.Status, ["Draft", "Returned"], StringComparison.OrdinalIgnoreCase))
+                        {
+                            <a asp-page="/Apply/Apply" asp-route-unitId="@application.UnitId"
+                               asp-route-applicationId="@application.Id"
+                               class="btn btn-sm btn-primary">Edit</a>
+                        }
+                        else if (User.IsInRole("Applicant"))
+                        {
+                            <a asp-page="/Apply/Apply" asp-route-unitId="@application.UnitId"
+                               asp-route-applicationId="@application.Id"
+                               class="btn btn-sm btn-secondary">View</a>
+                        }
+                    </td>
+                    <td>@application.FirstName @application.LastName</td>
+                    <td>@application.Email</td>
+                    <td>@application.PhoneNumber</td>
+                    <td>@application.Unit.Property.Name</td>
+                    <td>@application.Unit.Number</td>
+                    <td>@application.ApplicationStatus.Status</td>
+                    @if (User.IsInRole("Manager"))
+                    {
+                        <td>
+                            @if (application.ApplicationStatus.Status.Equals("Submitted", StringComparison.OrdinalIgnoreCase))
+                            {
+                                @if (application.ClaimedByManagerId is null)
+                                {
+                                    <form method="post" asp-page-handler="Claim" class="d-inline">
+                                        <input type="hidden" name="applicationId" value="@application.Id" />
+                                        <input type="hidden" name="pageNumber" value="@Model.PageNumber" />
+                                        <input type="hidden" name="pageSize" value="@Model.PageSize" />
+                                        <input type="hidden" name="sort" value="@Model.Sort" />
+                                        <input type="hidden" name="direction" value="@Model.Direction" />
+                                        <input type="hidden" name="statusId" value="@Model.StatusId" />
+                                        <input type="hidden" name="propertyId" value="@Model.PropertyId" />
+                                        <input type="hidden" name="searchTerm" value="@Model.SearchTerm" />
+                                        <button type="submit" class="btn btn-sm btn-outline-primary">Claim</button>
+                                    </form>
+                                }
+                                else if (application.ClaimedByManagerId == Model.CurrentManagerId)
+                                {
+                                    <form method="post" asp-page-handler="Release" class="d-inline">
+                                        <input type="hidden" name="applicationId" value="@application.Id" />
+                                        <input type="hidden" name="pageNumber" value="@Model.PageNumber" />
+                                        <input type="hidden" name="pageSize" value="@Model.PageSize" />
+                                        <input type="hidden" name="sort" value="@Model.Sort" />
+                                        <input type="hidden" name="direction" value="@Model.Direction" />
+                                        <input type="hidden" name="statusId" value="@Model.StatusId" />
+                                        <input type="hidden" name="propertyId" value="@Model.PropertyId" />
+                                        <input type="hidden" name="searchTerm" value="@Model.SearchTerm" />
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary">Release</button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">
+                                        Claimed by @application.ClaimedByManager?.FirstName
+                                        @application.ClaimedByManager?.LastName
+                                        @if (application.ClaimedAtUtc is not null)
+                                        {
+                                            <span>(@application.ClaimedAtUtc.Value.ToLocalTime())</span>
+                                        }
+                                    </span>
+                                }
+                            }
+                        </td>
+                    }
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    @await Component.InvokeAsync("PagedGrid", new
+    {
+        page = Model.PageNumber,
+        pageSize = Model.PageSize,
+        totalItems = Model.TotalItems,
+        routeUrl = Url.Page("./Applications", new
+        {
+            statusId = Model.StatusId,
+            propertyId = Model.PropertyId,
+            searchTerm = Model.SearchTerm,
+            sort = Model.Sort,
+            direction = Model.Direction
+        })!
+    })
+}

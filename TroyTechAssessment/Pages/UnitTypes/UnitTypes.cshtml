@@ -1,0 +1,14 @@
+@page
+@model TroyTechAssessment.Pages.UnitTypes.UnitTypesModel
+@{
+    ViewData["Title"] = "Unit Types";
+}
+
+<h1>Unit Types</h1>
+
+<partial name="_UnitTypesTable" model="Model" />
+<partial name="_AddEditUnitTypeSection" model="Model" />
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

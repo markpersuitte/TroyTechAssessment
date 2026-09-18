@@ -1,0 +1,19 @@
+@model TroyTechAssessment.Controllers.PropertiesController.PropertyInput
+<div class="modal fade" id="serverModal" tabindex="-1" data-open="true">
+    <div class="modal-dialog"><div class="modal-content">
+        <form method="post" action="@Url.Action("Save", "Properties")" data-server-modal-form>
+            @Html.AntiForgeryToken()
+            <div class="modal-header"><h2 class="modal-title fs-5">@(Model.Id.HasValue ? "Edit property" : "Add property")</h2><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <input asp-for="Id" type="hidden" />
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                <label asp-for="Name" class="form-label"></label><input asp-for="Name" class="form-control" /><span asp-validation-for="Name" class="text-danger"></span>
+                <label asp-for="StreetAddress" class="form-label mt-2">Street address</label><input asp-for="StreetAddress" class="form-control" /><span asp-validation-for="StreetAddress" class="text-danger"></span>
+                <label asp-for="City" class="form-label mt-2"></label><input asp-for="City" class="form-control" /><span asp-validation-for="City" class="text-danger"></span>
+                <label asp-for="State" class="form-label mt-2"></label><input asp-for="State" class="form-control" /><span asp-validation-for="State" class="text-danger"></span>
+                <label asp-for="ZipCode" class="form-label mt-2">ZIP code</label><input asp-for="ZipCode" class="form-control" /><span asp-validation-for="ZipCode" class="text-danger"></span>
+            </div>
+            <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary">Save</button></div>
+        </form>
+    </div></div>
+</div>

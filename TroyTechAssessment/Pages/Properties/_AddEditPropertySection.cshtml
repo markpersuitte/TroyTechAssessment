@@ -1,0 +1,35 @@
+@model TroyTechAssessment.Pages.Properties.PropertiesModel
+@{
+    var isEditing = Model.Section == "editproperty";
+    var isOpen = Model.Section is "property" or "editproperty";
+}
+
+@if (isOpen)
+{
+    <div class="modal fade" id="propertyModal" tabindex="-1" aria-hidden="true" data-open="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post">
+                    <div class="modal-header">
+                        <h2 class="modal-title fs-5">@(isEditing ? "Edit property" : "Add property")</h2>
+                        <a class="btn-close" asp-page="/Properties/Properties" aria-label="Close"></a>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="Input.Action" value="@(isEditing ? "EditProperty" : "AddProperty")" />
+                        <input type="hidden" asp-for="Input.PropertyId" />
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                        <div class="mb-3"><label asp-for="Input.PropertyName" class="form-label">Name</label><input asp-for="Input.PropertyName" class="form-control" /><span asp-validation-for="Input.PropertyName" class="text-danger"></span></div>
+                        <div class="mb-3"><label asp-for="Input.StreetAddress" class="form-label">Street address</label><input asp-for="Input.StreetAddress" class="form-control" /><span asp-validation-for="Input.StreetAddress" class="text-danger"></span></div>
+                        <div class="mb-3"><label asp-for="Input.City" class="form-label">City</label><input asp-for="Input.City" class="form-control" /><span asp-validation-for="Input.City" class="text-danger"></span></div>
+                        <div class="mb-3"><label asp-for="Input.State" class="form-label">State</label><input asp-for="Input.State" class="form-control" /><span asp-validation-for="Input.State" class="text-danger"></span></div>
+                        <div class="mb-3"><label asp-for="Input.ZipCode" class="form-label">ZIP code</label><input asp-for="Input.ZipCode" class="form-control" /><span asp-validation-for="Input.ZipCode" class="text-danger"></span></div>
+                    </div>
+                    <div class="modal-footer">
+                        <a class="btn btn-secondary" asp-page="/Properties/Properties">Cancel</a>
+                        <button type="submit" class="btn btn-primary">@(isEditing ? "Save changes" : "Add property")</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}

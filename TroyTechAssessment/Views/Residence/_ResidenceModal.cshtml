@@ -1,0 +1,74 @@
+@model TroyTechAssessment.Controllers.ResidenceController.ResidenceInput
+
+<div class="modal fade" id="serverModal" tabindex="-1" aria-labelledby="residenceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form asp-controller="Residence" asp-action="Save" method="post" data-server-modal-form>
+                @Html.AntiForgeryToken()
+                <input asp-for="Id" type="hidden" />
+                <input asp-for="ApplicationId" type="hidden" />
+                <input asp-for="ConcurrencyToken" type="hidden" />
+                <div class="modal-header">
+                    <h2 class="modal-title fs-5" id="residenceModalLabel">
+                        @(Model.Id.HasValue ? "Edit residence" : "Add residence")
+                    </h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="StreetAddress" class="form-label">Street address</label>
+                            <input asp-for="StreetAddress" class="form-control" />
+                            <span asp-validation-for="StreetAddress" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="City" class="form-label"></label>
+                            <input asp-for="City" class="form-control" />
+                            <span asp-validation-for="City" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="State" class="form-label"></label>
+                            <input asp-for="State" class="form-control" />
+                            <span asp-validation-for="State" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="ZipCode" class="form-label">ZIP code</label>
+                            <input asp-for="ZipCode" class="form-control" />
+                            <span asp-validation-for="ZipCode" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="LandlordPhoneNumber" class="form-label">Landlord phone number</label>
+                            <input asp-for="LandlordPhoneNumber" class="form-control" />
+                            <span asp-validation-for="LandlordPhoneNumber" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="LandlordFirstName" class="form-label">Landlord first name</label>
+                            <input asp-for="LandlordFirstName" class="form-control" />
+                            <span asp-validation-for="LandlordFirstName" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="LandlordLastName" class="form-label">Landlord last name</label>
+                            <input asp-for="LandlordLastName" class="form-control" />
+                            <span asp-validation-for="LandlordLastName" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="MoveInDate" class="form-label">Move-in date</label>
+                            <input asp-for="MoveInDate" class="form-control" type="date" />
+                            <span asp-validation-for="MoveInDate" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="MoveOutDate" class="form-label">Move-out date</label>
+                            <input asp-for="MoveOutDate" class="form-control" type="date" />
+                            <span asp-validation-for="MoveOutDate" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save residence</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

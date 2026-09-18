@@ -1,0 +1,14 @@
+@page
+@model TroyTechAssessment.Pages.Properties.PropertiesModel
+@{
+    ViewData["Title"] = "Properties";
+}
+
+<h1>Properties</h1>
+
+<partial name="_PropertiesTable" model="Model" />
+<partial name="_AddEditPropertySection" model="Model" />
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

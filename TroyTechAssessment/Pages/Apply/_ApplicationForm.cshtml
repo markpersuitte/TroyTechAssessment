@@ -1,0 +1,65 @@
+@model TroyTechAssessment.Pages.ApplyModel
+
+<section id="application-step" data-apply-step class="@(Model.Input.CurrentSection == "Application" ? string.Empty : "d-none")">
+    <h2 class="h4">Application</h2>
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label asp-for="Input.FirstName" class="form-label">First Name</label>
+            <input asp-for="Input.FirstName" class="form-control" readonly="@Model.IsReadOnly" required />
+            <span asp-validation-for="Input.FirstName" class="text-danger"></span>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label asp-for="Input.LastName" class="form-label">Last Name</label>
+            <input asp-for="Input.LastName" class="form-control" readonly="@Model.IsReadOnly" required />
+            <span asp-validation-for="Input.LastName" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label asp-for="Input.Email" class="form-label"></label>
+            <input asp-for="Input.Email" class="form-control" readonly="@Model.IsReadOnly" required />
+            <span asp-validation-for="Input.Email" class="text-danger"></span>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label asp-for="Input.PhoneNumber" class="form-label">Phone number</label>
+            <input asp-for="Input.PhoneNumber" class="form-control" autocomplete="tel" readonly="@Model.IsReadOnly" required />
+            <span asp-validation-for="Input.PhoneNumber" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="mb-3">Current Address</div>
+    <div class="mb-3">
+        <label asp-for="Input.CurrentStreetAddress" class="form-label">Street Address</label>
+        <input asp-for="Input.CurrentStreetAddress" class="form-control" readonly="@Model.IsReadOnly" required />
+        <span asp-validation-for="Input.CurrentStreetAddress" class="text-danger"></span>
+    </div>
+    <div class="row">
+        <div class="col-md-5 mb-3">
+            <label asp-for="Input.CurrentCity" class="form-label">City</label>
+            <input asp-for="Input.CurrentCity" class="form-control" readonly="@Model.IsReadOnly" required />
+            <span asp-validation-for="Input.CurrentCity" class="text-danger"></span>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label asp-for="Input.CurrentState" class="form-label">State</label>
+            <input asp-for="Input.CurrentState" class="form-control" readonly="@Model.IsReadOnly" required />
+            <span asp-validation-for="Input.CurrentState" class="text-danger"></span>
+        </div>
+        <div class="col-md-4 mb-3">
+            <label asp-for="Input.CurrentZipCode" class="form-label">Zip Code</label>
+            <input asp-for="Input.CurrentZipCode" class="form-control" readonly="@Model.IsReadOnly" required />
+            <span asp-validation-for="Input.CurrentZipCode" class="text-danger"></span>
+        </div>
+    </div>
+    @if (!Model.IsReadOnly)
+    {
+        <div class="mt-4">
+            <button type="submit" name="Input.Action" value="SaveDraft"
+                    class="btn btn-outline-primary" formnovalidate>
+                Save Draft
+            </button>
+            <button type="submit" name="Input.Action" value="ContinueApplication"
+                    class="btn btn-primary">
+                Continue
+            </button>
+        </div>
+    }
+</section>

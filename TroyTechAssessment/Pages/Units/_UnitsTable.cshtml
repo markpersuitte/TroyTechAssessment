@@ -1,0 +1,92 @@
+@model TroyTechAssessment.Pages.Units.UnitsPageViewModel
+<div class="text-center">
+    <h1 class="display-4">Available Units</h1>
+    </div>
+<form method="get" class="row g-2 align-items-end mb-3">
+    <div class="col-auto">
+        <label for="unit-property" class="form-label">Property</label>
+        <select id="unit-property" name="propertyId" class="form-select">
+            <option value="">All properties</option>
+            @foreach (var property in Model.PropertyOptions){
+                <option value="@property.Id" selected="@(Model.PropertyId == property.Id)">
+                    @property.Name
+                </option>
+            }
+        </select>
+    </div>
+    <div class="col-auto">
+        <label for="unit-sort" class="form-label">Sort</label>
+        <select id="unit-sort" name="sort" class="form-select">
+            <option value="property" selected="@(Model.Sort == "property")">Property</option>
+            <option value="unit" selected="@(Model.Sort == "unit")">Unit</option>
+            <option value="bedrooms" selected="@(Model.Sort == "bedrooms")">Bedrooms</option>
+            <option value="rent" selected="@(Model.Sort == "rent")">Rent</option>
+        </select>
+    </div>
+    <div class="col-auto">
+        <label for="unit-direction" class="form-label">Order</label>
+        <select id="unit-direction" name="direction" class="form-select">
+            <option value="asc" selected="@(Model.Direction == "asc")">Ascending</option>
+            <option value="desc" selected="@(Model.Direction == "desc")">Descending</option>
+        </select>
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-outline-primary" type="submit">Apply</button>
+    </div>
+</form>
+@if (Model.CanManageUnits)
+{
+    <div class="mb-3">
+        <button class="btn btn-primary" data-modal-url="@Url.Action("Modal", "Units")">Add unit</button>
+    </div>
+}
+<div id="server-modal-host"></div>
+<form id="anti-forgery-form">@Html.AntiForgeryToken()</form>
+
+@if (Model.Units.Count == 0)
+{
+    <p class="text-center">No units are currently available.</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                @if (Model.CanApply)
+                {
+                    <th></th>
+                }
+                <th>Property</th>
+                <th>Unit</th>
+                <th>Bedrooms</th>
+                <th>Monthly rent</th>
+                <th>Status</th>
+                @if (Model.CanManageUnits)
+                {
+                    <th></th>
+                }
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var unit in Model.Units)
+            {
+                @await Component.InvokeAsync("UnitRow", new { unit })
+            }
+            </tbody>
+        </table>
+    </div>
+}
+
+@await Component.InvokeAsync("PagedGrid", new
+{
+    page = Model.Page,
+    pageSize = Model.PageSize,
+    totalItems = Model.TotalItems,
+    routeUrl = Url.Page("/Index", new
+    {
+        sort = Model.Sort,
+        direction = Model.Direction,
+        propertyId = Model.PropertyId
+    })!
+})

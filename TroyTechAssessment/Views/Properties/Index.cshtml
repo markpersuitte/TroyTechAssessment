@@ -1,0 +1,46 @@
+@model IReadOnlyList<TroyTechAssessment.Data.Property>
+@{
+    ViewData["Title"] = "Properties";
+}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Properties</h1>
+    <button class="btn btn-primary" data-modal-url="@Url.Action("Modal", "Properties")">Add property</button>
+</div>
+<table class="table table-striped">
+    <thead><tr><th>Name</th><th>Address</th><th>Units</th><th>Actions</th></tr></thead>
+    <tbody>
+    @foreach (var property in Model)
+    {
+        <tr>
+            <td>@property.Name</td>
+            <td>@property.StreetAddress, @property.City, @property.State @property.ZipCode</td>
+            <td>@property.Units.Count</td>
+            <td class="text-end">
+            @if (property.ManagerProperties.Any()){
+                <button class="btn btn-sm btn-outline-primary" data-modal-url="@Url.Action("Modal", "Properties", new{ id = property.Id })">Edit</button>
+                <button type="button" class="btn btn-sm btn-outline-danger"
+                        data-bs-toggle="modal"
+                        data-bs-target="#@(property.Units.Count > 0 ? "propertyHasUnitsModal" : "deletePropertyModal")-@property.Id">
+                    Delete
+                </button>
+                @await Component.InvokeAsync("ConfirmModal", new{
+                    modalId = property.Units.Count > 0
+                        ? $"propertyHasUnitsModal-{property.Id}"
+                        : $"deletePropertyModal-{property.Id}",
+                    text = property.Units.Count > 0
+                        ? "This property cannot be deleted while units are still assigned to it."
+                        : $"Are you sure you want to delete property {property.Name}?",
+                    action = "Delete",
+                    propertyId = property.Id,
+                    informational = property.Units.Count > 0,
+                    controller = "Properties",
+                    controllerAction = "Delete"
+                })
+            }
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+<div id="server-modal-host"></div>
+@section Scripts { <script src="~/js/server-modals.js" asp-append-version="true"></script> }

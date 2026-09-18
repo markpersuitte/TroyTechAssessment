@@ -1,0 +1,348 @@
+@page
+@model TroyTechAssessment.Pages.ApplyModel
+@{
+    ViewData["Title"] = Model.IsReadOnly ? "View application" : "Apply for a unit";
+}
+
+<h1>@(Model.IsReadOnly ? "View application" : "Apply for unit " + Model.Unit.Number)</h1>
+
+<div id="server-modal-host"></div>
+
+@if (Model.ApplicationStatus is not null)
+{
+    <div class="alert alert-info d-flex justify-content-between align-items-center" role="status">
+        <strong>Status: @Model.ApplicationStatus</strong>
+        @if (string.Equals(Model.ApplicationStatus, "Submitted", StringComparison.OrdinalIgnoreCase))
+        {
+            <span>
+                @if (User.IsInRole("Applicant"))
+                {
+                    <form method="post" asp-page-handler="Withdraw" asp-route-unitId="@Model.Input.UnitId"
+                          asp-route-applicationId="@Model.Input.ApplicationId" class="d-inline">
+                        <button type="submit" class="btn btn-warning">Withdraw</button>
+                    </form>
+                }
+                @if (User.IsInRole("Manager") && Model.ClaimedByManagerId == Model.CurrentUserId)
+                {
+                    <form method="post" asp-page-handler="Release"
+                          asp-route-unitId="@Model.Input.UnitId"
+                          asp-route-applicationId="@Model.Input.ApplicationId"
+                          class="d-inline">
+                        <button type="submit" class="btn btn-outline-secondary">Release</button>
+                    </form>
+                    <button type="button" class="btn btn-primary"
+                            data-modal-url="@Url.Action("Modal", "Review", new { applicationId = Model.Input.ApplicationId })">
+                        Review
+                    </button>
+                }
+                else if (User.IsInRole("Manager") && Model.ClaimedByManagerId is null)
+                {
+                    <form method="post" asp-page-handler="Claim"
+                          asp-route-unitId="@Model.Input.UnitId"
+                          asp-route-applicationId="@Model.Input.ApplicationId"
+                          class="d-inline">
+                        <button type="submit" class="btn btn-primary">Claim</button>
+                    </form>
+                }
+                else if (User.IsInRole("Manager"))
+                {
+                    <span class="ms-2">Claimed by another manager.</span>
+                }
+            </span>
+        }
+    </div>
+}
+
+@if (User.IsInRole("Manager") &&
+     string.Equals(Model.ApplicationStatus, "Submitted", StringComparison.OrdinalIgnoreCase))
+{
+    <div class="modal fade" id="reviewApplicationModal" tabindex="-1"
+         aria-labelledby="reviewApplicationModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post" asp-page-handler="Review"
+                      asp-route-unitId="@Model.Input.UnitId"
+                      asp-route-applicationId="@Model.Input.ApplicationId">
+                    <div class="modal-header">
+                        <h2 class="modal-title fs-5" id="reviewApplicationModalLabel">
+                            Review application
+                        </h2>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="reviewOutcome" class="form-label">Outcome</label>
+                            <select id="reviewOutcome" name="outcome" class="form-select" required>
+                                <option value="">Select an outcome</option>
+                                <option value="Approve">Approve</option>
+                                <option value="Return">Return</option>
+                                <option value="Deny">Deny</option>
+                            </select>
+                        </div>
+                        <div id="leaseStartDateGroup" class="mb-3 d-none">
+                            <label for="leaseStartDate" class="form-label">Lease start date</label>
+                            <input id="leaseStartDate" name="leaseStartDate" type="date"
+                                   class="form-control"
+                                   value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="reviewComment" class="form-label">
+                                Comment <span id="reviewCommentRequired">(required for Return or Deny)</span>
+                            </label>
+                            <textarea id="reviewComment" name="reviewComment"
+                                      class="form-control" rows="4" maxlength="1000"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary">Save review</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+@if (Model.Input.ApplicationId.HasValue && Model.StatusHistory.Count > 0)
+{
+    <section class="mb-4">
+        <h2 class="h4">Status history</h2>
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                <tr>
+                    <th>Status</th>
+                    <th>Changed by</th>
+                    <th>When</th>
+                    <th>Comment</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var history in Model.StatusHistory)
+                {
+                    <tr>
+                        <td>@history.ApplicationStatus.Status</td>
+                        <td>@history.ChangedByUser.FirstName @history.ChangedByUser.LastName</td>
+                        <td>@history.ChangedAtUtc.ToLocalTime()</td>
+                        <td>@history.Comment</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </section>
+}
+<section class="mb-4">
+    <h2 class="h4">Unit details</h2>
+    <div class="row g-3">
+        <div class="col-md-6 text-nowrap">
+            <strong>Property:</strong> @Model.Unit.Property.Name
+        </div>
+        <div class="col-md-6 text-nowrap">
+            <strong>Address:</strong>
+            @Model.Unit.Property.StreetAddress, @Model.Unit.Property.City,
+            @Model.Unit.Property.State @Model.Unit.Property.ZipCode
+        </div>
+        <div class="col-md-6 text-nowrap">
+            <strong>Unit:</strong> @Model.Unit.Number
+        </div>
+        <div class="col-md-6 text-nowrap">
+            <strong>Bedrooms:</strong> @Model.Unit.Bedrooms
+        </div>
+        <div class="col-md-6 text-nowrap">
+            <strong>Monthly rent:</strong> @Model.Unit.MonthlyRent.ToString("C")
+        </div>
+        <div class="col-md-6 text-nowrap">
+            <strong>Type:</strong> @Model.Unit.UnitType.UnitTypeName
+        </div>
+    </div>
+</section>
+
+<section>
+    <form method="post">
+        <input type="hidden" asp-for="Input.UnitId" />
+        <input type="hidden" asp-for="Input.ApplicationId" />
+        <input type="hidden" asp-for="Input.CurrentSection" />
+        <input type="hidden" asp-for="Input.ConcurrencyToken" />
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        @if (!Model.IsReadOnly)
+        {
+            @await Html.PartialAsync("Apply/_ApplicationForm", Model)
+            @await Html.PartialAsync("Apply/_ResidenceHistorySection", Model)
+        }
+        @await Html.PartialAsync("Apply/_ApplicationSummary", Model)
+    </form>
+</section>
+
+@if (User.IsInRole("Manager") && Model.Input.ApplicationId.HasValue)
+{
+    <section class="mb-4 mt-4">
+        <h2 class="h4">Manager notes</h2>
+        @foreach (var note in Model.ManagerNotes)
+        {
+            <form method="post" asp-controller="Review" asp-action="SaveNotes"
+                  asp-route-applicationId="@Model.Input.ApplicationId"
+                  class="manager-note border rounded p-3 mb-3">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="noteId" value="@note.Id" />
+                @if (note.ManagerId == Model.CurrentUserId)
+                {
+                    <input type="hidden" name="concurrencyToken"
+                           value="@Convert.ToBase64String(note.RowVersion)" />
+                }
+                @if (note.ManagerId == Model.CurrentUserId){
+                    <button type="button" class="btn btn-sm btn-outline-primary manager-note-edit float-end">
+                        Edit
+                    </button>
+                }
+                <div class="small text-muted mb-2">
+                    @note.Manager.FirstName @note.Manager.LastName -
+                    @note.CreatedAtUtc.ToLocalTime()
+                </div>
+                <div class="manager-note-display mb-2" style="white-space: pre-wrap">@note.Notes</div>
+                @if (note.ManagerId == Model.CurrentUserId)
+                {
+                    <div class="manager-note-editor d-none">
+                        <textarea name="notes" class="form-control mb-2" rows="3"
+                                  maxlength="4000" data-original-note="@note.Notes">@note.Notes</textarea>
+                        <button type="submit" class="btn btn-sm btn-outline-primary">Save changes</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary manager-note-cancel">
+                            Cancel
+                        </button>
+                    </div>
+                }
+            </form>
+        }
+        <h3 class="h6">Add note</h3>
+        <form method="post" asp-controller="Review" asp-action="SaveNotes"
+              asp-route-applicationId="@Model.Input.ApplicationId">
+            @Html.AntiForgeryToken()
+            <div class="mb-3">
+                <textarea name="notes" class="form-control"
+                          rows="5" maxlength="4000"></textarea>
+                <div class="form-text">
+                    These notes are visible only to property managers assigned to this property.
+                </div>
+            </div>
+            <button type="submit" class="btn btn-outline-primary">Add note</button>
+        </form>
+    </section>
+}
+
+@section Scripts {
+    <script src="~/js/server-modals.js" asp-append-version="true"></script>
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        const updateMoveOutRequirements = () => {
+            const rows = [...document.querySelectorAll("#residence-history-rows .residence-history-row")];
+            rows.forEach((row, index) => {
+                const moveOutDate = row.querySelector(".move-out-date");
+                if (index === 0) {
+                    moveOutDate.removeAttribute("required");
+                } else {
+                    moveOutDate.setAttribute("required", "required");
+                }
+            });
+        };
+
+        document.getElementById("add-residence-history")?.addEventListener("click", () => {
+            const rows = document.getElementById("residence-history-rows");
+            const template = document.getElementById("residence-history-template");
+            const index = rows.children.length;
+            rows.insertAdjacentHTML("beforeend", template.innerHTML.replaceAll("__index__", index));
+            updateMoveOutRequirements();
+        });
+
+        document.getElementById("residence-history-rows")?.addEventListener("click", (event) => {
+            if (event.target.classList.contains("remove-residence-history")) {
+                event.target.closest(".residence-history-row").remove();
+                updateMoveOutRequirements();
+            }
+        });
+
+        const escapeHtml = (value) => value.replace(/[&<>"']/g, character => ({
+            "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+        }[character]));
+        const inputValue = (name) => document.querySelector(`[name="${name}"]`)?.value ?? "";
+        const updateSummary = () => {
+            document.getElementById("summary-name").textContent =
+                `${inputValue("Input.FirstName")} ${inputValue("Input.LastName")}`.trim();
+            document.getElementById("summary-email").textContent = inputValue("Input.Email");
+            document.getElementById("summary-phone").textContent = inputValue("Input.PhoneNumber");
+            document.getElementById("summary-current-address").textContent =
+                `${inputValue("Input.CurrentStreetAddress")}, ${inputValue("Input.CurrentCity")}, ` +
+                `${inputValue("Input.CurrentState")} ${inputValue("Input.CurrentZipCode")}`;
+
+            const summary = document.getElementById("summary-residence-history");
+            const rows = [...document.querySelectorAll("#residence-history-rows .residence-history-row")];
+            summary.replaceChildren();
+            if (rows.length === 0) {
+                summary.innerHTML = "<p class='mb-0'>No residence history was provided.</p>";
+                return;
+            }
+
+            rows.forEach((row, index) => {
+                const value = (field) => row.querySelector(`[name$=".${field}"]`)?.value ?? "";
+                const safe = (field) => escapeHtml(value(field));
+                const residence = document.createElement("div");
+                residence.className = "border rounded p-3 mb-3";
+                residence.innerHTML = `
+                    <h4 class="h6">Residence ${index + 1}</h4>
+                    <dl class="row mb-0">
+                        <dt class="col-sm-3">Address</dt>
+                        <dd class="col-sm-9">${safe("StreetAddress")}, ${safe("City")}, ${safe("State")} ${safe("ZipCode")}</dd>
+                        <dt class="col-sm-3">Landlord</dt>
+                        <dd class="col-sm-9">${safe("LandlordFirstName")} ${safe("LandlordLastName")} (${safe("LandlordPhoneNumber")})</dd>
+                        <dt class="col-sm-3">Dates</dt>
+                        <dd class="col-sm-9">${safe("MoveInDate")} - ${safe("MoveOutDate") || "Present"}</dd>
+                    </dl>`;
+                summary.appendChild(residence);
+            });
+        };
+
+        updateMoveOutRequirements();
+
+        const reviewOutcome = document.getElementById("reviewOutcome");
+        const leaseStartDateGroup = document.getElementById("leaseStartDateGroup");
+        const leaseStartDate = document.getElementById("leaseStartDate");
+        const reviewComment = document.getElementById("reviewComment");
+        const updateReviewFields = () => {
+            const isApproval = reviewOutcome?.value === "Approve";
+            const commentRequired = reviewOutcome?.value === "Return" ||
+                reviewOutcome?.value === "Deny";
+            leaseStartDateGroup?.classList.toggle("d-none", !isApproval);
+            if (leaseStartDate) {
+                leaseStartDate.required = isApproval;
+            }
+            if (reviewComment) {
+                reviewComment.required = commentRequired;
+            }
+        };
+        reviewOutcome?.addEventListener("change", updateReviewFields);
+        updateReviewFields();
+
+        document.querySelectorAll(".manager-note-edit").forEach((button) => {
+            button.addEventListener("click", () => {
+                const note = button.closest(".manager-note");
+                note.querySelector(".manager-note-display").classList.add("d-none");
+                note.querySelector(".manager-note-editor").classList.remove("d-none");
+                button.classList.add("d-none");
+                note.querySelector("textarea").focus();
+            });
+        });
+
+        document.querySelectorAll(".manager-note-cancel").forEach((button) => {
+            button.addEventListener("click", () => {
+                const note = button.closest(".manager-note");
+                note.querySelector(".manager-note-display").classList.remove("d-none");
+                note.querySelector(".manager-note-editor").classList.add("d-none");
+                const editor = note.querySelector("textarea");
+                editor.value = editor.dataset.originalNote;
+                note.querySelector(".manager-note-edit").classList.remove("d-none");
+            });
+        });
+    </script>
+}

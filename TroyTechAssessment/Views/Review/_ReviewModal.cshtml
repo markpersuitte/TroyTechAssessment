@@ -1,0 +1,26 @@
+@model TroyTechAssessment.Controllers.ReviewController.ReviewInput
+<div class="modal fade" id="serverModal" tabindex="-1" data-open="true">
+    <div class="modal-dialog"><div class="modal-content">
+        <form method="post" action="@Url.Action("Save", "Review")" data-server-modal-form>
+            @Html.AntiForgeryToken()
+            <input asp-for="ApplicationId" type="hidden" />
+            <input asp-for="ConcurrencyToken" type="hidden" />
+            <div class="modal-header"><h2 class="modal-title fs-5">Review application</h2><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                <label asp-for="Outcome" class="form-label">Outcome</label>
+                <select asp-for="Outcome" class="form-select">
+                    <option value="">Select an outcome</option><option value="Approve">Approve</option><option value="Return">Return</option><option value="Deny">Deny</option>
+                </select>
+                <span asp-validation-for="Outcome" class="text-danger"></span>
+                <label asp-for="LeaseStartDate" class="form-label mt-3">Lease start date</label>
+                <input asp-for="LeaseStartDate" type="date" class="form-control" />
+                <span asp-validation-for="LeaseStartDate" class="text-danger"></span>
+                <label asp-for="Comment" class="form-label mt-3">Comment</label>
+                <textarea asp-for="Comment" class="form-control" rows="4" maxlength="1000"></textarea>
+                <span asp-validation-for="Comment" class="text-danger"></span>
+            </div>
+            <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary">Save review</button></div>
+        </form>
+    </div></div>
+</div>

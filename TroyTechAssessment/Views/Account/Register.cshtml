@@ -1,0 +1,79 @@
+@model TroyTechAssessment.Controllers.AccountController.RegisterViewModel
+@{
+    ViewData["Title"] = "Register";
+}
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <form asp-action="Register" method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="All" class="text-danger"></div>
+            <h1>Register</h1>
+            <div class="mb-3">
+                <label asp-for="Input.FirstName" class="form-label"></label>
+                <input asp-for="Input.FirstName" class="form-control" autocomplete="given-name" />
+                <span asp-validation-for="Input.FirstName" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.LastName" class="form-label"></label>
+                <input asp-for="Input.LastName" class="form-control" autocomplete="family-name" />
+                <span asp-validation-for="Input.LastName" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.Email" class="form-label"></label>
+                <input asp-for="Input.Email" class="form-control" autocomplete="username" />
+                <span asp-validation-for="Input.Email" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.Password" class="form-label"></label>
+                <p style="font-size: .8rem">Password must have at least 8 characters, one uppercase letter, one lowercase letter, one number, and one special character.</p>
+                <input asp-for="Input.Password" class="form-control" autocomplete="new-password" />
+                <span asp-validation-for="Input.Password" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.ConfirmPassword" class="form-label"></label>
+                <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" />
+                <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Input.RoleId" class="form-label">Role</label>
+                <select asp-for="Input.RoleId" asp-items="Model.Roles" class="form-select" id="registration-role">
+                    <option value="">Select a role</option>
+                </select>
+                <span asp-validation-for="Input.RoleId" class="text-danger"></span>
+            </div>
+            <div class="mb-3 d-none" id="manager-properties">
+                <label class="form-label">Properties</label>
+                @foreach (var property in Model.Properties)
+                {
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox"
+                               name="Input.SelectedPropertyIds" value="@property.Id"
+                               id="property-@property.Id"
+                               @(Model.Input.SelectedPropertyIds.Contains(property.Id) ? "checked" : null) />
+                        <label class="form-check-label" for="property-@property.Id">@property.Name</label>
+                    </div>
+                }
+                <span class="text-muted">Select the properties this manager can manage.</span>
+                <span asp-validation-for="Input.SelectedPropertyIds" class="text-danger d-block"></span>
+            </div>
+            <button type="submit" class="btn btn-primary">Register</button>
+            <a asp-action="Login" class="btn btn-secondary">Login</a>
+        </form>
+    </div>
+</div>
+
+<script>
+    (() => {
+        const role = document.getElementById("registration-role");
+        const properties = document.getElementById("manager-properties");
+        const managerRole = [...role.options].find(option => option.text === "Manager")?.value;
+        const updateVisibility = () => properties.classList.toggle("d-none", role.value !== managerRole);
+        role.addEventListener("change", updateVisibility);
+        updateVisibility();
+    })();
+</script>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

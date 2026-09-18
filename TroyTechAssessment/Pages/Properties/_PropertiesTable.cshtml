@@ -1,0 +1,63 @@
+@model TroyTechAssessment.Pages.Properties.PropertiesModel
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <a class="btn btn-primary" asp-page="/Properties/Properties" asp-route-section="property">Add property</a>
+</div>
+
+@if (Model.Properties.Count == 0)
+{
+    <p>No properties have been added.</p>
+}
+else
+{
+    <div class="table-responsive mb-4">
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <th>Name</th>
+                <th>Address</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var property in Model.Properties)
+            {
+                <tr>
+                    <td>@property.Name</td>
+                    <td>@property.StreetAddress, @property.City, @property.State @property.ZipCode</td>
+                    <td>
+                        <a class="btn btn-sm btn-outline-primary"
+                           asp-page="/Properties/Properties" asp-route-section="editproperty"
+                           asp-route-propertyId="@property.Id">Edit</a>
+                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                data-bs-toggle="modal"
+                                data-bs-target="#@(property.Units.Count > 0 ? "propertyHasUnitsModal" : "deletePropertyModal")-@property.Id">
+                            Delete
+                        </button>
+                        @if (property.Units.Count > 0)
+                        {
+                            @await Component.InvokeAsync("ConfirmModal", new
+                            {
+                                modalId = $"propertyHasUnitsModal-{property.Id}",
+                                text = "This property cannot be deleted while units are still assigned to it.",
+                                informational = true
+                            })
+                        }
+                        else
+                        {
+                            @await Component.InvokeAsync("ConfirmModal", new
+                            {
+                                modalId = $"deletePropertyModal-{property.Id}",
+                                text = $"Are you sure you want to delete property {property.Name}?",
+                                action = "DeleteProperty",
+                                propertyId = property.Id,
+                                page = "/Properties/Properties"
+                            })
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}

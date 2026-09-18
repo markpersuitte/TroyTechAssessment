@@ -1,0 +1,36 @@
+@model TroyTechAssessment.Pages.Leases.LeasesModel
+
+@if (Model.Leases.Count == 0)
+{
+    <p>No leases have been created.</p>
+}
+else{
+    <div class="table-responsive mb-4">
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Renter</th>
+                <th>Property</th>
+                <th>Unit</th>
+                <th>Type</th>
+                <th>Rent</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var lease in Model.Leases){
+                <tr>
+                    <td>@lease.StartDate.ToString("M/d/yy")</td>
+                    <td>@lease.EndDate.ToString("M/d/yy")</td>
+                    <td>@(lease.Application.FirstName + " " + lease.Application.LastName)</td>
+                    <td>@lease.Unit.Property.Name</td>
+                    <td>@lease.Unit.Number</td>
+                    <td>@lease.Unit.UnitType.UnitTypeName</td>
+                    <td>@lease.Unit.MonthlyRent.ToString("C")</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}

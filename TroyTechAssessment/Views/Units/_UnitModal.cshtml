@@ -1,0 +1,17 @@
+@model TroyTechAssessment.Controllers.UnitsController.UnitInput
+<div class="modal fade" id="serverModal" tabindex="-1" data-open="true"><div class="modal-dialog"><div class="modal-content">
+    <form method="post" action="@Url.Action("Save", "Units")" data-server-modal-form>
+        @Html.AntiForgeryToken()
+        <input asp-for="Id" type="hidden" />
+        <div class="modal-header"><h2 class="modal-title fs-5">@(Model.Id.HasValue ? "Edit unit" : "Add unit")</h2><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <label asp-for="Number" class="form-label"></label><input asp-for="Number" class="form-control" /><span asp-validation-for="Number" class="text-danger"></span>
+            <label asp-for="Bedrooms" class="form-label mt-2"></label><select asp-for="Bedrooms" class="form-select"><option value="">Select bedrooms</option>@foreach (var bedroom in TroyTechAssessment.Data.Unit.BedroomOptions) { <option value="@bedroom">@bedroom</option> }</select><span asp-validation-for="Bedrooms" class="text-danger"></span>
+            <label asp-for="MonthlyRent" class="form-label mt-2">Monthly rent</label><input asp-for="MonthlyRent" class="form-control" step="0.01" /><span asp-validation-for="MonthlyRent" class="text-danger"></span>
+            <label asp-for="PropertyId" class="form-label mt-2">Property</label><select asp-for="PropertyId" class="form-select">@foreach (var property in Model.PropertyOptions) { <option value="@property.Id">@property.Name</option> }</select><span asp-validation-for="PropertyId" class="text-danger"></span>
+            <label asp-for="UnitTypeId" class="form-label mt-2">Type</label><select asp-for="UnitTypeId" class="form-select">@foreach (var type in Model.UnitTypeOptions) { <option value="@type.Id">@type.UnitTypeName</option> }</select><span asp-validation-for="UnitTypeId" class="text-danger"></span>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary">Save</button></div>
+    </form>
+</div></div></div>

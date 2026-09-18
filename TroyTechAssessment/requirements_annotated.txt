@@ -1,0 +1,405 @@
+ANNOTATED REQUIREMENTS
+======================
+
+Create a full-stack web application for a property management company that accepts rental applications for its apartments. A property manager maintains properties and their units. An applicant applies for a unit and, if approved, is issued a lease. There are only two roles in this system: an applicant and a property manager. There are certain actions that an applicant and a property manager can perform; ensure the permissions in the controllers and the UI reflect this.
+
+Status: COMPLETE.
+Handled in:
+- TroyTechAssessment/Program.cs
+- TroyTechAssessment/Data/ApplicationUser.cs
+- TroyTechAssessment/Pages/Index.cshtml.cs
+- TroyTechAssessment/Pages/Apply/Apply.cshtml.cs
+- TroyTechAssessment/Controllers/ReviewController.cs
+- TroyTechAssessment/Controllers/PropertiesController.cs
+- TroyTechAssessment/Controllers/UnitsController.cs
+
+The application uses ASP.NET Core Identity, Applicant/Manager roles, role-scoped UI, server-side ownership checks, manager property assignments, application review, and lease creation.
+
+a. The applicant can create, fill out, submit, and withdraw applications for available units, and correct and resubmit an application that was returned.
+
+Status: COMPLETE.
+Handled in:
+- TroyTechAssessment/Pages/Apply/Apply.cshtml.cs
+- TroyTechAssessment/Pages/Apply/_ApplicationForm.cshtml
+- TroyTechAssessment/Pages/Apply/_ResidenceHistorySection.cshtml
+- TroyTechAssessment/Pages/Apply/_ApplicationSummary.cshtml
+
+Draft and Returned applications are editable. Continue, Save Draft, Submit, and Withdraw actions are server-validated. Submitted applications can be returned and then corrected/resubmitted.
+
+b. The property manager maintains properties and units and reviews submitted applications. An approved application issues a twelve-month lease for the unit.
+
+Status: COMPLETE.
+Handled in:
+- TroyTechAssessment/Pages/Index.cshtml.cs
+- TroyTechAssessment/Controllers/PropertiesController.cs
+- TroyTechAssessment/Controllers/UnitsController.cs
+- TroyTechAssessment/Controllers/ReviewController.cs
+- TroyTechAssessment/Pages/Apply/Apply.cshtml.cs
+- TroyTechAssessment/Data/Lease.cs
+
+Managers maintain properties and units through modal actions. Review approval creates a twelve-month inclusive lease and records the status transition.
+
+Technical Requirements
+======================
+
+1. Build the web application with ASP.NET Core MVC and Razor:
+
+   a. Use controllers, view models, Razor views, partial views, and view components. Both partial views and view components are required.
+
+   Status: COMPLETE.
+   Handled in:
+   - Razor Pages: TroyTechAssessment/Pages/
+   - MVC controllers: TroyTechAssessment/Controllers/
+   - View models: TroyTechAssessment/Pages/Units/UnitsPageViewModel.cs and page input models
+   - Partial views: TroyTechAssessment/Pages/Apply/_ApplicationForm.cshtml, _ResidenceHistorySection.cshtml, _ApplicationSummary.cshtml
+   - View components: TroyTechAssessment/ViewComponents/PagedGridViewComponent.cs
+
+   b. Populate modals from partial views returned by controller actions. When the submitted form fails validation, return the same partial with the validation messages so the modal re-renders in place; when it succeeds, close the modal and refresh the affected part of the page.
+
+   Status: COMPLETE.
+   Handled in:
+   - TroyTechAssessment/wwwroot/js/server-modals.js
+   - TroyTechAssessment/Controllers/PropertiesController.cs
+   - TroyTechAssessment/Controllers/UnitsController.cs
+   - TroyTechAssessment/Controllers/UnitTypesController.cs
+   - TroyTechAssessment/Controllers/ResidenceController.cs
+   - TroyTechAssessment/Views/Properties/
+   - TroyTechAssessment/Views/Units/
+   - TroyTechAssessment/Views/Residence/
+
+   Modal GET actions return partials, invalid POSTs return the same partial with ModelState, and successful POSTs return JSON so the modal closes and the page reloads.
+
+   c. Structure and style the web application to your liking using best practices.
+
+   Status: COMPLETE.
+   Handled in:
+   - TroyTechAssessment/Pages/
+   - TroyTechAssessment/Views/
+   - TroyTechAssessment/wwwroot/
+
+   The UI uses Bootstrap-style layout, shared modal behavior, partials, role-specific controls, validation summaries, and reusable paging UI.
+
+2. Create the backend using .NET 10:
+
+   a. Use ASP.NET Identity for User/Role Management.
+
+   Status: COMPLETE.
+   Handled in:
+   - TroyTechAssessment/Program.cs
+   - TroyTechAssessment/Data/ApplicationUser.cs
+   - TroyTechAssessment/Pages/Account/
+   - TroyTechAssessment/Data/ApplicationDbContext.cs
+
+   Identity is configured with GUID users/roles, EF stores, unique email addresses, login, registration, logout, and role authorization.
+
+   b. On Start:
+
+      i. The database should be created, and migrations applied.
+
+      Status: COMPLETE.
+      Handled in:
+      - TroyTechAssessment/Program.cs
+      - TroyTechAssessment/Migrations/
+
+      Startup calls Database.MigrateAsync().
+
+      ii. The database should be seeded idempotently with lookups, property managers, applicants, properties, units, and applications in every status.
+
+      Status: COMPLETE.
+      Handled in:
+      - TroyTechAssessment/Data/DatabaseSeeder.cs
+
+      Seeding checks for existing/partial data, creates roles and users, creates properties, manager assignments, units, applications, status history, and leases. The seed operation uses Bogus and prevents inconsistent partial startup data.
+
+         1. Seed your database with data using Bogus for .NET.
+
+         Status: COMPLETE.
+         Handled in:
+         - TroyTechAssessment/Data/DatabaseSeeder.cs
+         - TroyTechAssessment/TroyTechAssessment.csproj
+
+         Bogus is referenced and used to generate manager and applicant identity data.
+
+   c. Use SQL Server / SQL Server Express:
+
+      Status: COMPLETE.
+      Handled in:
+      - TroyTechAssessment/Program.cs
+      - TroyTechAssessment/appsettings.json
+      - TroyTechAssessment/TroyTechAssessment.csproj
+
+      The application uses the SQL Server EF Core provider and the configured DefaultConnection.
+
+      i. Use Entity Framework Core with code-first database migrations.
+
+      Status: COMPLETE.
+      Handled in:
+      - TroyTechAssessment/Data/ApplicationDbContext.cs
+      - TroyTechAssessment/Migrations/
+
+      The schema is represented by the EF Core model and manually maintained migration files, including application claims, manager notes, and row-version columns.
+
+Functional Requirements
+=======================
+
+1. Users:
+
+   a. Users should be able to sign up, log in, and log out.
+
+      Status: COMPLETE.
+      Handled in:
+      - TroyTechAssessment/Pages/Index.cshtml.cs
+      - TroyTechAssessment/Pages/Index.cshtml
+      - TroyTechAssessment/Pages/Account/
+
+      Login, registration, and logout actions are implemented.
+
+      i. For convenience, sign-up allows the user to specify if they are an Applicant or a Property Manager.
+
+      Status: COMPLETE.
+      Handled in:
+      - TroyTechAssessment/Pages/Index.cshtml.cs
+      - TroyTechAssessment/Pages/Index.cshtml
+
+      Registration accepts the selected role and assigns it through UserManager.
+
+2. Properties and Units:
+
+   a. A property manager can add, edit, and remove properties and their units (unit number, bedrooms, monthly rent, unit type) through modals. Applicants can browse available units and start an application for one.
+
+   Status: COMPLETE.
+   Handled in:
+   - TroyTechAssessment/Pages/Index.cshtml.cs
+   - TroyTechAssessment/Pages/Units/_AddEditUnitSection.cshtml
+   - TroyTechAssessment/Controllers/PropertiesController.cs
+   - TroyTechAssessment/Controllers/UnitsController.cs
+   - TroyTechAssessment/Pages/Index.cshtml
+
+   Manager property/unit CRUD uses modal partials. Applicants see available units and can start applications subject to lease availability. Property deletion is blocked when units are assigned and removes manager assignments before a successful delete. Unit deletion uses the shared HTML confirmation modal and is blocked when any application or lease exists, regardless of status.
+
+   b. Unit Type is a lookup with Active and Inactive values. An inactive value still displays on a unit that already uses it but cannot be selected for any other unit. Enforce this on the server.
+
+   Status: COMPLETE.
+   Handled in:
+   - TroyTechAssessment/Data/UnitType.cs
+   - TroyTechAssessment/Pages/UnitTypes/UnitTypes.cshtml.cs
+   - TroyTechAssessment/Pages/Index.cshtml.cs
+
+   Unit types have Active state. Existing assignments remain displayable, while add/edit validation rejects inactive types for new assignments.
+
+   c. Approval creates a lease for the unit with a start date and a twelve-month term. A unit whose lease term covers today is not available.
+
+   Status: COMPLETE.
+   Handled in:
+   - TroyTechAssessment/Data/Lease.cs
+   - TroyTechAssessment/Controllers/ReviewController.cs
+   - TroyTechAssessment/Pages/Apply/Apply.cshtml.cs
+   - TroyTechAssessment/Pages/Index.cshtml.cs
+
+   Lease.CalculateEndDate creates the inclusive twelve-month term. Availability and approval check active and overlapping leases.
+
+3. Rental Application
+
+   a. An application is for one unit and has two sections and a summary:
+
+      i. Applicant Information (name, phone, email, current address)
+
+      Status: COMPLETE.
+      Handled in:
+      - TroyTechAssessment/Pages/Apply/_ApplicationForm.cshtml
+      - TroyTechAssessment/Pages/Apply/Apply.cshtml.cs
+
+      ii. Residence History (a list of prior residences, each with an address, landlord name and phone, and move-in and move-out dates)
+
+      Status: COMPLETE.
+      Handled in:
+      - TroyTechAssessment/Pages/Apply/_ResidenceHistorySection.cshtml
+      - TroyTechAssessment/Controllers/ResidenceController.cs
+      - TroyTechAssessment/Data/ApplicationResidenceHistory.cs
+
+      iii. Summary (read-only view of both sections and Submit)
+
+      Status: COMPLETE.
+      Handled in:
+      - TroyTechAssessment/Pages/Apply/_ApplicationSummary.cshtml
+
+      The summary is read-only and includes the submit action plus blocking-error display.
+
+   b. The application is a single page that shows one section at a time, not a separate page per section. One view model drives it, and each section renders through its own partial view or view component. One form posts to one action, and the button clicked determines what happens:
+
+      Status: COMPLETE.
+      Handled in:
+      - TroyTechAssessment/Pages/Apply/Apply.cshtml
+      - TroyTechAssessment/Pages/Apply/Apply.cshtml.cs
+      - TroyTechAssessment/Pages/Apply/_ApplicationForm.cshtml
+      - TroyTechAssessment/Pages/Apply/_ResidenceHistorySection.cshtml
+      - TroyTechAssessment/Pages/Apply/_ApplicationSummary.cshtml
+
+      The Input.Action value selects Continue, Back, Save Draft, or Submit behavior.
+
+      i. Continue validates the current section, persists it only when it is valid, and shows the next section (or the Summary after the last one). When the section is invalid it re-renders with the errors.
+
+      Status: COMPLETE.
+      Handled in:
+      - TroyTechAssessment/Pages/Apply/Apply.cshtml.cs
+
+      Section-specific validation runs before persistence. Invalid requests return the same page; valid requests save and advance.
+
+      ii. Back returns to the previous section without saving. Submit is available from the Summary only once both sections have been saved.
+
+      Status: COMPLETE.
+      Handled in:
+      - TroyTechAssessment/Pages/Apply/Apply.cshtml.cs
+      - TroyTechAssessment/Pages/Apply/_ApplicationSummary.cshtml
+
+      Back actions use formnovalidate and only change the selected section. Submit validates both sections and requires an existing application.
+
+   c. Residences are added, edited, and removed through a modal.
+
+   Status: COMPLETE.
+   Handled in:
+   - TroyTechAssessment/Controllers/ResidenceController.cs
+   - TroyTechAssessment/Views/Residence/_ResidenceModal.cshtml
+   - TroyTechAssessment/Pages/Apply/_ResidenceHistorySection.cshtml
+
+   d. The same section partial renders editable or read-only based on a server-side decision. An applicant can edit while the application is in a Draft or Returned status; otherwise, every section is read-only. Controllers reject posts that are not allowed.
+
+   Status: COMPLETE.
+   Handled in:
+   - TroyTechAssessment/Pages/Apply/Apply.cshtml.cs
+   - TroyTechAssessment/Pages/Apply/_ApplicationForm.cshtml
+   - TroyTechAssessment/Pages/Apply/_ResidenceHistorySection.cshtml
+   - TroyTechAssessment/Controllers/ResidenceController.cs
+
+   IsReadOnly is determined from status. Applicant writes require Applicant role, ownership, and Draft/Returned status.
+
+   e. At submit and again at approval, reject the action with an error when the unit has an active lease. Other open applications for that unit are left as they are. The approval check prevents a second lease.
+
+   Status: COMPLETE.
+   Handled in:
+   - TroyTechAssessment/Pages/Apply/Apply.cshtml.cs
+   - TroyTechAssessment/Controllers/ReviewController.cs
+   - TroyTechAssessment/Data/Lease.cs
+
+   Submission checks active availability. Approval checks active and overlapping leases inside a serializable transaction. Other applications are not automatically changed.
+
+4. Review
+
+   a. A property manager opens a submitted application and completes it through a review modal with an outcome of Approve, Return, or Deny and a comment (required for Return and Deny).
+
+   Status: COMPLETE.
+   Handled in:
+   - TroyTechAssessment/Controllers/ReviewController.cs
+   - TroyTechAssessment/Views/Review/_ReviewModal.cshtml
+   - TroyTechAssessment/wwwroot/js/server-modals.js
+
+   The manager must claim the submitted application before review. The modal validates outcomes and requires comments for Return/Deny.
+
+   b. Application statuses are Draft, Submitted, Returned, Approved, Denied, and Withdrawn. Approved, Denied, and Withdrawn are terminal.
+
+   Status: COMPLETE.
+   Handled in:
+   - TroyTechAssessment/Data/ApplicationStatus.cs
+   - TroyTechAssessment/Data/ApplicationDbContext.cs
+   - TroyTechAssessment/Pages/Apply/Apply.cshtml.cs
+   - TroyTechAssessment/Data/DatabaseSeeder.cs
+
+   All six statuses are seeded. Applicant edit and manager review transitions enforce the lifecycle and terminal behavior.
+
+   c. The application page shows property managers a history of status changes and review outcomes (who, when, comment).
+
+   Status: COMPLETE.
+   Handled in:
+   - TroyTechAssessment/Pages/Apply/Apply.cshtml
+   - TroyTechAssessment/Data/ApplicationStatusHistory.cs
+   - TroyTechAssessment/Pages/Apply/Apply.cshtml.cs
+
+   Status history includes status, actor, local timestamp, and comment.
+
+5. Application List
+
+   a. A list of applications filtered by status and property, with the filtering done in the database, not in memory. Applicants see their own applications and property managers see all of them.
+
+   Status: COMPLETE.
+   Handled in:
+   - TroyTechAssessment/Pages/Applications/Applications.cshtml.cs
+   - TroyTechAssessment/Pages/Applications/Applications.cshtml
+
+   Status/property/search filters use IQueryable before Count, Skip, and Take. Applicants are restricted to their applications; managers are restricted to assigned properties. Managers can also filter the queue to applications claimed by themselves through the MyClaims filter.
+
+Bonus (Optional)
+===============
+
+1. Add paging and sorting to the application list, done in the database, then extract the list into a reusable grid view component driven by a JSON endpoint that returns the page of rows and the filtered total, documented with OpenAPI
+
+Status: COMPLETE.
+Handled in:
+- TroyTechAssessment/Pages/Applications/Applications.cshtml.cs
+- TroyTechAssessment/Pages/Applications/Applications.cshtml
+- TroyTechAssessment/ViewComponents/PagedGridViewComponent.cs
+- TroyTechAssessment/Views/Shared/Components/PagedGrid/Default.cshtml
+- TroyTechAssessment/Controllers/OpenApiController.cs
+
+Application and unit lists use database Count/Skip/Take, support page sizes 10/25/50, sorting, range/total display, disabled navigation, JSON endpoints, and /api/openapi.json documentation.
+
+2. Add a review queue. A property manager claims a submitted application (Under Review) before completing it, and can release it back to the queue.
+
+Status: COMPLETE.
+Handled in:
+- TroyTechAssessment/Data/Application.cs
+- TroyTechAssessment/Pages/Applications/Applications.cshtml.cs
+- TroyTechAssessment/Pages/Applications/Applications.cshtml
+- TroyTechAssessment/Pages/Apply/Apply.cshtml.cs
+- TroyTechAssessment/Pages/Apply/Apply.cshtml
+- TroyTechAssessment/Controllers/ReviewController.cs
+
+Claims store manager and timestamp, are property-scoped, use serialized claiming, and are released when the manager releases or completes review.
+
+3. Add property manager notes that are visible and editable only to property managers and are never rendered or returned to an applicant
+
+Status: COMPLETE.
+Handled in:
+- TroyTechAssessment/Data/ManagerNote.cs
+- TroyTechAssessment/Data/Application.cs
+- TroyTechAssessment/Data/ApplicationUser.cs
+- TroyTechAssessment/Controllers/ReviewController.cs
+- TroyTechAssessment/Pages/Apply/Apply.cshtml.cs
+- TroyTechAssessment/Pages/Apply/Apply.cshtml
+- TroyTechAssessment/Migrations/20260918170000_AddManagerNotesTable.cs
+- TroyTechAssessment/Migrations/20260918184500_AddManagerNoteRowVersion.cs
+
+Notes are stored separately, visible only to assigned managers, editable only by their creator, displayed as history with manager and creation time, and excluded from applicant projections/APIs. Note edits use row-version concurrency checks.
+
+4. Allow a section to be saved even when it fails validation, showing the errors. The Summary lists everything still blocking submission, and Submit stays blocked while any error remains. Define rules once per section and return errors to the field they belong to.
+
+Status: COMPLETE.
+Handled in:
+- TroyTechAssessment/Pages/Apply/Apply.cshtml.cs
+- TroyTechAssessment/Pages/Apply/_ApplicationForm.cshtml
+- TroyTechAssessment/Pages/Apply/_ResidenceHistorySection.cshtml
+- TroyTechAssessment/Pages/Apply/_ApplicationSummary.cshtml
+
+Save Draft validates and returns the current section with errors while preserving applicant data and incomplete residence rows in DraftResidenceHistoryJson. Submit performs full validation and cannot proceed while errors remain. Residence modal validation returns field-level errors.
+
+5. Allow more than one applicant on an application. Any applicant on it can view and edit it. Ownership checks apply to all of them.
+
+Status: NOT IMPLEMENTED.
+
+The current Application model has one UserId and one set of applicant fields. Implementing this requirement requires an application-participant/applicant table, migration of the current primary applicant fields, multi-owner authorization, UI for adding/editing applicants, and updates to application lists, summaries, validation, and APIs.
+
+   a. With two applicants editing at once, saves to different sections must not interfere with each other, and when both save the same section, the second save is rejected as stale with a message to reload rather than silently overwriting. No real-time synchronisation is expected.
+
+   Status: NOT IMPLEMENTED for multi-applicant ownership because multi-applicant support is not implemented.
+
+   Partial infrastructure exists:
+   - TroyTechAssessment/Data/Application.cs: Application.RowVersion
+   - TroyTechAssessment/Data/ManagerNote.cs: ManagerNote.RowVersion
+   - TroyTechAssessment/Controllers/ResidenceController.cs: residence operations use the application row version
+   - TroyTechAssessment/Pages/Apply/Apply.cshtml.cs: application form saves reject stale row versions
+
+   Once multiple applicants are added, the concurrency design must be refined so different sections can save independently while simultaneous saves to the same section reject the older token.
+
+Overall status
+==============
+
+All required functionality and all optional bonus items except multi-applicant applications are implemented. The application also includes additional review-queue and concurrency protections beyond the base requirements.

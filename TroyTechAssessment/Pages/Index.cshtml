@@ -1,0 +1,9 @@
+@page
+@model TroyTechAssessment.Pages.IndexModel
+
+<partial name="Units/_UnitsTable" model="Model.UnitsTable" />
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/server-modals.js" asp-append-version="true"></script>
+}

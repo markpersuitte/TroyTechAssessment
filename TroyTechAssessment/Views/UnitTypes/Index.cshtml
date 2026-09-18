@@ -1,0 +1,21 @@
+@model IReadOnlyList<TroyTechAssessment.Data.UnitType>
+@{ ViewData["Title"] = "Unit Types"; }
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Unit Types</h1>
+    <button class="btn btn-primary" data-modal-url="@Url.Action("Modal", "UnitTypes")">Add unit type</button>
+</div>
+<form id="anti-forgery-form">@Html.AntiForgeryToken()</form>
+<table class="table table-striped">
+    <thead><tr><th>Name</th><th>Active</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var type in Model)
+    {
+        <tr><td>@type.UnitTypeName</td><td>@(type.Active ? "Yes" : "No")</td><td class="text-end">
+            <button class="btn btn-sm btn-outline-primary" data-modal-url="@Url.Action("Modal", "UnitTypes", new { id = type.Id })">Edit</button>
+            <button class="btn btn-sm btn-outline-danger" data-delete-url="@Url.Action("Delete", "UnitTypes", new { id = type.Id })">Delete</button>
+        </td></tr>
+    }
+    </tbody>
+</table>
+<div id="server-modal-host"></div>
+@section Scripts { <script src="~/js/server-modals.js" asp-append-version="true"></script> }

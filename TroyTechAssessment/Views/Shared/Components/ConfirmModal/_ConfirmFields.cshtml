@@ -1,0 +1,31 @@
+@model TroyTechAssessment.ViewComponents.ConfirmModalViewComponent.ConfirmModalModel
+
+@Html.AntiForgeryToken()
+@if (string.IsNullOrWhiteSpace(Model.Controller))
+{
+    <input type="hidden" name="Input.Action" value="@Model.Action" />
+}
+else if (Model.UnitId.HasValue)
+{
+    <input type="hidden" name="id" value="@Model.UnitId" />
+}
+else if (Model.PropertyId.HasValue)
+{
+    <input type="hidden" name="id" value="@Model.PropertyId" />
+}
+@if (Model.UnitId.HasValue)
+{
+    <input type="hidden" name="Input.UnitId" value="@Model.UnitId" />
+}
+@if (Model.PropertyId.HasValue)
+{
+    @if (string.IsNullOrWhiteSpace(Model.Controller))
+    {
+        <input type="hidden" name="Input.PropertyId" value="@Model.PropertyId" />
+    }
+}
+@if (Model.UnitTypeId.HasValue)
+{
+    <input type="hidden" name="Input.UnitTypeId" value="@Model.UnitTypeId" />
+}
+<button type="submit" class="btn btn-danger">Confirm</button>
