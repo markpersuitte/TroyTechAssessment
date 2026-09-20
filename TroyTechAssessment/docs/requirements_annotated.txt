@@ -87,7 +87,8 @@ Technical Requirements
    Handled in:
    - TroyTechAssessment/Program.cs
    - TroyTechAssessment/Data/ApplicationUser.cs
-   - TroyTechAssessment/Pages/Account/
+   - TroyTechAssessment/Controllers/AccountController.cs
+   - TroyTechAssessment/Views/Account/
    - TroyTechAssessment/Data/ApplicationDbContext.cs
 
    Identity is configured with GUID users/roles, EF stores, unique email addresses, login, registration, logout, and role authorization.
@@ -150,7 +151,8 @@ Functional Requirements
       Handled in:
       - TroyTechAssessment/Pages/Index.cshtml.cs
       - TroyTechAssessment/Pages/Index.cshtml
-      - TroyTechAssessment/Pages/Account/
+      - TroyTechAssessment/Controllers/AccountController.cs
+      - TroyTechAssessment/Views/Account/
 
       Login, registration, and logout actions are implemented.
 
@@ -224,6 +226,9 @@ Functional Requirements
       - TroyTechAssessment/Pages/Apply/_ApplicationSummary.cshtml
 
       The summary is read-only and includes the submit action plus blocking-error display.
+
+      Applications may contain multiple applicants. Residence records are keyed to the applicant participant, so each applicant maintains a separate residence history.
+      Property managers can select an applicant from the application-page dropdown to view that applicant's information and residence history. Applicant information is read-only for managers; only applicants can edit applicant information.
 
    b. The application is a single page that shows one section at a time, not a separate page per section. One view model drives it, and each section renders through its own partial view or view component. One form posts to one action, and the button clicked determines what happens:
 
@@ -325,7 +330,7 @@ Functional Requirements
    - TroyTechAssessment/Pages/Applications/Applications.cshtml.cs
    - TroyTechAssessment/Pages/Applications/Applications.cshtml
 
-   Status/property/search filters use IQueryable before Count, Skip, and Take. Applicants are restricted to their applications; managers are restricted to assigned properties. Managers can also filter the queue to applications claimed by themselves through the MyClaims filter.
+   Status/property/search filters use IQueryable before Count, Skip, and Take. Applicants are restricted to applications containing their linked `UserId`; managers are restricted to assigned properties. Search includes application and participant fields, and managers can filter the queue to applications claimed by themselves through the MyClaims filter. Sorting includes a stable application-ID tie-breaker for consistent paging. Unlinked email-only applicants are not supported.
 
 Bonus (Optional)
 ===============
@@ -383,23 +388,35 @@ Save Draft validates and returns the current section with errors while preservin
 
 5. Allow more than one applicant on an application. Any applicant on it can view and edit it. Ownership checks apply to all of them.
 
-Status: NOT IMPLEMENTED.
+Status: COMPLETE.
 
-The current Application model has one UserId and one set of applicant fields. Implementing this requirement requires an application-participant/applicant table, migration of the current primary applicant fields, multi-owner authorization, UI for adding/editing applicants, and updates to application lists, summaries, validation, and APIs.
+Handled in:
+- TroyTechAssessment/Data/Application.cs
+- TroyTechAssessment/Data/ApplicationApplicant.cs
+- TroyTechAssessment/Data/ApplicationDbContext.cs
+- TroyTechAssessment/Migrations/20260919215604_AddApplicationApplicantsGenerated.cs
+- TroyTechAssessment/Pages/Apply/Apply.cshtml.cs
+- TroyTechAssessment/Pages/Apply/_ApplicationForm.cshtml
+- TroyTechAssessment/Pages/Apply/_ApplicationSummary.cshtml
+- TroyTechAssessment/Pages/Applications/Applications.cshtml.cs
+- TroyTechAssessment/Controllers/ResidenceController.cs
+
+Applications store normalized participant rows. Existing applications are migrated to a primary participant. Additional applicants must be linked to an existing account; `ApplicationApplicants` stores only `UserId`, while email addresses are read from `AspNetUsers`. The application form uses one email entry field and a removable list, rejects duplicate and primary-applicant entries, and checks account existence before adding an address. Applicant ownership checks use participant membership, and applicant listings, summaries, and manager review display all participants.
+Residence history rows reference their owning participant, and the manager application view provides an applicant dropdown without allowing managers to edit applicant information.
 
    a. With two applicants editing at once, saves to different sections must not interfere with each other, and when both save the same section, the second save is rejected as stale with a message to reload rather than silently overwriting. No real-time synchronisation is expected.
 
-   Status: NOT IMPLEMENTED for multi-applicant ownership because multi-applicant support is not implemented.
+   Status: COMPLETE.
 
-   Partial infrastructure exists:
-   - TroyTechAssessment/Data/Application.cs: Application.RowVersion
-   - TroyTechAssessment/Data/ManagerNote.cs: ManagerNote.RowVersion
-   - TroyTechAssessment/Controllers/ResidenceController.cs: residence operations use the application row version
-   - TroyTechAssessment/Pages/Apply/Apply.cshtml.cs: application form saves reject stale row versions
+   Handled in:
+   - TroyTechAssessment/Data/ApplicationApplicant.cs: applicant-information row version
+   - TroyTechAssessment/Data/Application.cs: residence/status row version
+   - TroyTechAssessment/Pages/Apply/Apply.cshtml.cs: separate applicant and application concurrency tokens
+   - TroyTechAssessment/Controllers/ResidenceController.cs: residence edits reject stale application tokens
 
-   Once multiple applicants are added, the concurrency design must be refined so different sections can save independently while simultaneous saves to the same section reject the older token.
+   Applicant-information edits use the participant row version, while residence-history edits use the application row version. Stale same-section saves are rejected with a reload message, and residence writes are restricted to the current applicant participant. No real-time synchronization is used.
 
 Overall status
 ==============
 
-All required functionality and all optional bonus items except multi-applicant applications are implemented. The application also includes additional review-queue and concurrency protections beyond the base requirements.
+All required functionality and optional bonus items are implemented. The application also includes additional review-queue, multi-applicant, and concurrency protections beyond the base requirements.

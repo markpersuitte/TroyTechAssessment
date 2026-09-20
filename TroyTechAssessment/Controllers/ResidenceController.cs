@@ -24,6 +24,7 @@ public class ResidenceController(ApplicationDbContext db) : Controller
             });
 
         var residence = application.ApplicationResidenceHistory
+            .Where(item => item.ApplicantId == CurrentApplicantId(application))
             .SingleOrDefault(item => item.Id == residenceId.Value);
         return residence is null
             ? NotFound()
@@ -40,30 +41,34 @@ public class ResidenceController(ApplicationDbContext db) : Controller
             return NotFound();
 
         if (input.Id is not null &&
-            application.ApplicationResidenceHistory.All(item => item.Id != input.Id.Value))
+            application.ApplicationResidenceHistory
+                .Where(item => item.ApplicantId == CurrentApplicantId(application))
+                .All(item => item.Id != input.Id.Value))
         {
             return NotFound();
         }
 
         ValidateDateSequence(input, application);
         if (!ModelState.IsValid)
-            return BadRequest(PartialView("_ResidenceModal", input));
+            return PartialView("_ResidenceModal", input);
         if (!SetConcurrencyToken(application, input.ConcurrencyToken))
             return Conflict("This application was changed by someone else. Reload before editing residence history.");
 
+        var applicantId = CurrentApplicantId(application);
         ApplicationResidenceHistory residence;
         if (input.Id is null)
         {
             residence = new ApplicationResidenceHistory
             {
-                ApplicationId = application.Id
+                ApplicationId = application.Id,
+                ApplicantId = applicantId
             };
             db.ApplicationResidenceHistory.Add(residence);
         }
         else
         {
             residence = application.ApplicationResidenceHistory
-                .Single(item => item.Id == input.Id.Value);
+                .Single(item => item.Id == input.Id.Value && item.ApplicantId == applicantId);
         }
 
         residence.StreetAddress = input.StreetAddress.Trim();
@@ -106,7 +111,9 @@ public class ResidenceController(ApplicationDbContext db) : Controller
             return NotFound();
 
         var residence = application.ApplicationResidenceHistory
-            .SingleOrDefault(item => item.Id == residenceId);
+            .SingleOrDefault(item =>
+                item.Id == residenceId &&
+                item.ApplicantId == CurrentApplicantId(application));
         if (residence is null)
             return NotFound();
         if (!SetConcurrencyToken(application, Request.Headers["X-Concurrency-Token"]))
@@ -137,11 +144,20 @@ public class ResidenceController(ApplicationDbContext db) : Controller
         var userId = CurrentUserId;
         return db.Applications
             .Include(application => application.ApplicationResidenceHistory)
+            .Include(application => application.Applicants)
             .Where(application =>
                 application.Id == applicationId &&
-                application.UserId == userId &&
+                application.Applicants.Any(applicant =>
+                    applicant.UserId == userId) &&
                 (application.ApplicationStatusId == 1 ||
                  application.ApplicationStatusId == 3));
+    }
+
+    private int CurrentApplicantId(Application application)
+    {
+        var userId = CurrentUserId;
+        var applicant = application.Applicants.SingleOrDefault(item => item.UserId == userId);
+        return applicant?.Id ?? 0;
     }
 
     private void Validate(ResidenceInput input)
@@ -179,6 +195,7 @@ public class ResidenceController(ApplicationDbContext db) : Controller
             return;
 
         var residences = application.ApplicationResidenceHistory
+            .Where(item => item.ApplicantId == CurrentApplicantId(application))
             .Where(item => input.Id != item.Id)
             .Select(item => new DateRange(item.MoveInDate, item.MoveOutDate))
             .Append(new DateRange(input.MoveInDate.Value, input.MoveOutDate))

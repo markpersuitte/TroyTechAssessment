@@ -29,6 +29,7 @@ public class Application{
     public string? DraftResidenceHistoryJson { get; set; }
     public DateTime LastModifiedAtUtc { get; set; } = DateTime.UtcNow;
     public ICollection<ApplicationResidenceHistory> ApplicationResidenceHistory { get; set; } = [];
+    public ICollection<ApplicationApplicant> Applicants { get; set; } = [];
     public ICollection<ApplicationStatusHistory> StatusHistory { get; set; } = [];
     public ICollection<ManagerNote> ManagerNotes { get; set; } = [];
     public Lease? Lease { get; set; }

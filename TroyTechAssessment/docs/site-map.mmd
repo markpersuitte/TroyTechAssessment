@@ -1,0 +1,104 @@
+%% TroyTechAssessment site map
+%% The two top-level subgraphs represent the Applicant and Manager tabs.
+flowchart LR
+    classDef tab fill:#330033,color:#fff,stroke:#163a5c,stroke-width:2px
+    classDef page fill:#003300,color:#102a43,stroke:#6b9bd1
+    classDef component fill:#000000,color:#4a3600,stroke:#c99a2e
+    classDef action fill:#000033,color:#174a2b,stroke:#65a77b
+    classDef shared fill:#003333,color:#333,stroke:#999
+
+    SharedLayout["Shared shell<br/>Pages/Shared/_Layout.cshtml"]:::shared
+    Login["Login<br/>Views/Account/Login.cshtml"]:::page
+    Register["Register<br/>Views/Account/Register.cshtml"]:::page
+    AccountEdit["Edit account<br/>Views/Account/Edit.cshtml"]:::page
+    Logout["Logout<br/>AccountController"]:::action
+    Privacy["Privacy<br/>Pages/Privacy.cshtml"]:::page
+
+    SharedLayout --> Login
+    SharedLayout --> Register
+    SharedLayout --> AccountEdit
+    SharedLayout --> Logout
+    SharedLayout --> Privacy
+
+    subgraph ApplicantTab["TAB 1 - APPLICANT LOGIN"]
+        ApplicantHome["Home / available units<br/>Pages/Index.cshtml"]:::page
+        ApplicantUnits["Units table<br/>Pages/Units/_UnitsTable.cshtml"]:::component
+        ApplicantApply["Rental application<br/>Pages/Apply/Apply.cshtml"]:::page
+        ApplicantInfo["Applicant information<br/>Pages/Apply/_ApplicationForm.cshtml"]:::component
+        AdditionalApplicants["Additional applicants<br/>Existing-account email lookup, removable list"]:::component
+        ApplicantResidence["Residence history<br/>Pages/Apply/_ResidenceHistorySection.cshtml"]:::component
+        ApplicantSummary["Application summary<br/>Pages/Apply/_ApplicationSummary.cshtml"]:::component
+        ResidenceModal["Residence add/edit modal<br/>Views/Residence/_ResidenceModal.cshtml"]:::component
+        ApplicantList["My applications<br/>Pages/Applications/Applications.cshtml"]:::page
+        ApplicantPaging["Paging grid<br/>ViewComponents/PagedGrid"]:::component
+        ApplicantAccount["Account actions<br/>Edit account / Logout"]:::action
+
+        ApplicantHome --> ApplicantUnits
+        ApplicantUnits -->|Start or resume application| ApplicantApply
+        ApplicantApply --> ApplicantInfo
+        ApplicantInfo --> AdditionalApplicants
+        ApplicantApply --> ApplicantResidence
+        ApplicantApply --> ApplicantSummary
+        ApplicantResidence -->|Add, edit, remove| ResidenceModal
+        ResidenceModal --> ApplicantResidence
+        ApplicantHome --> ApplicantList
+        ApplicantList --> ApplicantPaging
+        ApplicantList -->|Edit or view| ApplicantApply
+        ApplicantHome --> ApplicantAccount
+    end
+
+    subgraph ManagerTab["TAB 2 - MANAGER LOGIN"]
+        ManagerHome["Home / managed units<br/>Pages/Index.cshtml"]:::page
+        ManagerUnits["Units table<br/>Pages/Units/_UnitsTable.cshtml"]:::component
+        ManagerProperties["Properties<br/>Pages/Properties/Properties.cshtml"]:::page
+        PropertiesTable["Properties table<br/>Pages/Properties/_PropertiesTable.cshtml"]:::component
+        PropertyModal["Property modal<br/>Views/Properties/_PropertyModal.cshtml"]:::component
+        ManagerUnitTypes["Unit types<br/>Pages/UnitTypes/UnitTypes.cshtml"]:::page
+        UnitTypesTable["Unit types table<br/>Pages/UnitTypes/_UnitTypesTable.cshtml"]:::component
+        UnitTypeModal["Unit type modal<br/>Views/UnitTypes/_UnitTypeModal.cshtml"]:::component
+        UnitModal["Unit modal<br/>Views/Units/_UnitModal.cshtml"]:::component
+        ManagerList["Application queue<br/>Pages/Applications/Applications.cshtml"]:::page
+        QueueFilters["Database filters<br/>status, property, search, MyClaims"]:::component
+        QueuePaging["Paging and JSON endpoint<br/>ViewComponents/PagedGrid + /Applications?handler=Json"]:::component
+        ManagerApply["Application review view<br/>Pages/Apply/Apply.cshtml"]:::page
+        ApplicantDropdown["Applicant dropdown<br/>select applicant to view"]:::component
+        ReadOnlyInfo["Applicant information<br/>read-only for managers"]:::component
+        ManagerResidence["Applicant residence history<br/>read-only view"]:::component
+        ReviewModal["Review modal<br/>Views/Review/_ReviewModal.cshtml"]:::component
+        ManagerNotes["Manager notes<br/>ReviewController + inline notes"]:::component
+        Leases["Leases<br/>Pages/Leases/Leases.cshtml"]:::page
+        LeasesTable["Leases table<br/>Pages/Leases/_LeasesTable.cshtml"]:::component
+        ManagerAccount["Account actions<br/>Edit account / Logout"]:::action
+
+        ManagerHome --> ManagerUnits
+        ManagerUnits --> UnitModal
+        ManagerHome --> ManagerProperties
+        ManagerProperties --> PropertiesTable
+        PropertiesTable --> PropertyModal
+        ManagerHome --> ManagerUnitTypes
+        ManagerUnitTypes --> UnitTypesTable
+        UnitTypesTable --> UnitTypeModal
+        ManagerHome --> ManagerList
+        ManagerList --> QueueFilters
+        ManagerList --> QueuePaging
+        ManagerList -->|View or manage| ManagerApply
+        ManagerApply --> ApplicantDropdown
+        ApplicantDropdown --> ReadOnlyInfo
+        ApplicantDropdown --> ManagerResidence
+        ManagerApply --> ReviewModal
+        ManagerApply --> ManagerNotes
+        ManagerHome --> Leases
+        Leases --> LeasesTable
+        ManagerHome --> ManagerAccount
+    end
+
+    Login --> ApplicantTab
+    Login --> ManagerTab
+
+    SharedComponents["Shared behavior<br/>Bootstrap, validation, server-modals.js,<br/>ConfirmModal view component"]:::shared
+    SharedComponents -. used by .-> ApplicantApply
+    SharedComponents -. used by .-> ApplicantList
+    SharedComponents -. used by .-> ManagerProperties
+    SharedComponents -. used by .-> ManagerUnitTypes
+    SharedComponents -. used by .-> ManagerApply
+    SharedComponents -. used by .-> ManagerList

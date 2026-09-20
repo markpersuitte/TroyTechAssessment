@@ -148,6 +148,21 @@ public static class DatabaseSeeder
         db.Applications.AddRange(applications);
         await db.SaveChangesAsync();
 
+        db.ApplicationApplicants.AddRange(applications.Select(application => new ApplicationApplicant
+        {
+            ApplicationId = application.Id,
+            UserId = application.UserId,
+            FirstName = application.FirstName,
+            LastName = application.LastName,
+            PhoneNumber = application.PhoneNumber,
+            CurrentStreetAddress = application.CurrentStreetAddress,
+            CurrentCity = application.CurrentCity,
+            CurrentState = application.CurrentState,
+            CurrentZipCode = application.CurrentZipCode,
+            IsPrimary = true
+        }));
+        await db.SaveChangesAsync();
+
         var savedApplications = await db.Applications.OrderBy(a => a.Id).ToListAsync();
         var historyEntries = savedApplications.Select((application, index) => new ApplicationStatusHistory
         {

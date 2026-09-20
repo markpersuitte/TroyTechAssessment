@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -22,14 +23,22 @@ public class ApplyModel : PageModel
     public bool IsReadOnly { get; private set; }
     public string? ApplicationStatus { get; private set; }
     public IList<ManagerNote> ManagerNotes { get; private set; } = [];
-    public Guid CurrentUserId { get; private set; }
+    public Guid CurrentUserId =>
+        Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)
+            ? userId
+            : Guid.Empty;
     public Guid? ClaimedByManagerId { get; private set; }
     public IList<ApplicationStatusHistory> StatusHistory { get; private set; } = [];
+    public IList<ApplicationApplicant> Applicants { get; private set; } = [];
 
     [BindProperty]
     public InputModel Input { get; set; } = new();
 
-    public async Task<IActionResult> OnGetAsync(int unitId, int? applicationId, string? section = null)
+    public async Task<IActionResult> OnGetAsync(
+        int unitId,
+        int? applicationId,
+        string? section = null,
+        int? applicantId = null)
     {
         var isApplicant = User.IsInRole("Applicant");
         var isManager = User.IsInRole("Manager");
@@ -50,9 +59,8 @@ public class ApplyModel : PageModel
             return BadRequest("This unit is not currently available.");
         }
 
-        var userIdValue = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        var hasUserId = Guid.TryParse(userIdValue, out var userId);
-        CurrentUserId = userId;
+        var userId = CurrentUserId;
+        var hasUserId = userId != Guid.Empty;
         if (applicationId is null && isApplicant &&
             hasUserId &&
             await FindExistingApplicationAsync(unitId, userId) is { } existingApplication)
@@ -75,15 +83,7 @@ public class ApplyModel : PageModel
         Input.LastName = user?.LastName ?? string.Empty;
         if (applicationId is int existingApplicationId)
         {
-            var application = await _db.Applications
-                .Include(item => item.ApplicationResidenceHistory)
-                .Include(item => item.ApplicationStatus)
-                .Include(item => item.StatusHistory)
-                    .ThenInclude(history => history.ApplicationStatus)
-                .Include(item => item.StatusHistory)
-                    .ThenInclude(history => history.ChangedByUser)
-                .Include(item => item.ManagerNotes)
-                    .ThenInclude(note => note.Manager)
+            var application = await ApplicationQuery()
                 .AsNoTracking()
                 .SingleOrDefaultAsync(item => item.Id == existingApplicationId &&
                     item.UnitId == unitId &&
@@ -91,7 +91,7 @@ public class ApplyModel : PageModel
                         ? _db.ManagerProperties.Any(assignment =>
                             assignment.ManagerId == userId &&
                             assignment.PropertyId == item.Unit.PropertyId)
-                        : item.UserId == userId));
+                        : item.Applicants.Any(applicant => applicant.UserId == userId)));
             if (application is null)
             {
                 return NotFound();
@@ -101,6 +101,29 @@ public class ApplyModel : PageModel
             ApplicationStatus = application.ApplicationStatus.Status;
             ClaimedByManagerId = application.ClaimedByManagerId;
             Input.ConcurrencyToken = Convert.ToBase64String(application.RowVersion);
+            Applicants = application.Applicants
+                .OrderByDescending(item => item.IsPrimary)
+                .ThenBy(item => item.LastName)
+                .ThenBy(item => item.FirstName)
+                .ToList();
+            Input.SelectedApplicantId = isManager
+                ? applicantId is not null &&
+                  application.Applicants.Any(item => item.Id == applicantId)
+                    ? applicantId
+                    : application.Applicants
+                        .OrderByDescending(item => item.IsPrimary)
+                        .Select(item => (int?)item.Id)
+                        .FirstOrDefault()
+                : application.Applicants
+                    .Where(item => item.UserId == userId)
+                    .Select(item => (int?)item.Id)
+                    .FirstOrDefault();
+            LoadApplicant(application, userId, user?.Email, Input.SelectedApplicantId);
+            Input.AdditionalApplicants = application.Applicants
+                .Where(item => !item.IsPrimary)
+                .OrderBy(item => item.Id)
+                .Select(item => new AdditionalApplicantInput { Email = item.User.Email ?? string.Empty })
+                .ToList();
             if (isManager)
                 ManagerNotes = application.ManagerNotes
                     .OrderBy(note => note.CreatedAtUtc)
@@ -108,20 +131,14 @@ public class ApplyModel : PageModel
             StatusHistory = application.StatusHistory
                 .OrderByDescending(history => history.ChangedAtUtc)
                 .ToList();
-            Input.FirstName = application.FirstName;
-            Input.LastName = application.LastName;
-            Input.Email = application.Email;
-            Input.PhoneNumber = application.PhoneNumber;
-            Input.CurrentStreetAddress = application.CurrentStreetAddress;
-            Input.CurrentCity = application.CurrentCity;
-            Input.CurrentState = application.CurrentState;
-            Input.CurrentZipCode = application.CurrentZipCode;
-            Input.ResidenceHistory = ToResidenceInputs(application);
-            if (!string.IsNullOrWhiteSpace(application.DraftResidenceHistoryJson))
-            {
-                Input.ResidenceHistory = JsonSerializer.Deserialize<List<ResidenceHistoryInput>>(
-                    application.DraftResidenceHistoryJson) ?? Input.ResidenceHistory;
-            }
+            var selectedApplicant = application.Applicants
+                .SingleOrDefault(item => item.Id == Input.SelectedApplicantId);
+            Input.ResidenceHistory = selectedApplicant is null
+                ? []
+                : ToResidenceInputs(application, selectedApplicant.Id);
+            if (selectedApplicant is not null)
+                Input.ResidenceHistory = LoadDraftResidenceHistory(application, selectedApplicant.Id)
+                    ?? Input.ResidenceHistory;
         }
         else
         {
@@ -134,6 +151,22 @@ public class ApplyModel : PageModel
             ? section
             : "Application";
         return Page();
+    }
+
+    public async Task<IActionResult> OnGetCheckApplicantEmailAsync(string email)
+    {
+        if (!User.IsInRole("Applicant") || User.IsInRole("Manager"))
+            return Forbid();
+
+        var normalizedEmail = email.Trim();
+        var exists = !string.IsNullOrWhiteSpace(normalizedEmail) &&
+                     await _db.Users.AnyAsync(user =>
+                         user.Email != null &&
+                         user.Email.ToUpper() == normalizedEmail.ToUpper());
+        if (!exists){
+            JsonResult r = new JsonResult(new{ exists });
+        }
+        return new JsonResult(new { exists });
     }
 
     public Task<IActionResult> OnPostWithdrawAsync(int unitId, int applicationId)
@@ -249,6 +282,17 @@ public class ApplyModel : PageModel
         }
 
         Unit = unit;
+        var userId = CurrentUserId;
+        var hasUserId = userId != Guid.Empty;
+        var user = !hasUserId
+            ? null
+            : await _db.Users.SingleOrDefaultAsync(item => item.Id == userId);
+        if (user is null)
+        {
+            return Forbid();
+        }
+
+        Input.Email = user.Email ?? string.Empty;
         var application = await LoadEditableApplicationAsync();
         if (Input.ApplicationId is not null && application is null)
         {
@@ -260,22 +304,25 @@ public class ApplyModel : PageModel
             if (!SetConcurrencyToken(application))
                 return StaleSave();
             Input.ApplicationId = application.Id;
+            Applicants = application.Applicants
+                .OrderByDescending(item => item.IsPrimary)
+                .ThenBy(item => item.LastName)
+                .ThenBy(item => item.FirstName)
+                .ToList();
             ApplicationStatus = application.ApplicationStatus.Status;
             IsReadOnly = !IsEditableStatus(application.ApplicationStatusId);
             StatusHistory = application.StatusHistory
                 .OrderByDescending(history => history.ChangedAtUtc)
                 .ToList();
-            Input.ResidenceHistory = ToResidenceInputs(application);
+            Input.SelectedApplicantId ??= FindApplicant(application, user.Id, user.Email)?.Id;
+            Input.ResidenceHistory = Input.SelectedApplicantId is int applicantId
+                ? ToResidenceInputs(application, applicantId)
+                : [];
         }
 
-        var userIdValue = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        var hasUserId = Guid.TryParse(userIdValue, out var userId);
-        var user = !hasUserId
-            ? null
-            : await _db.Users.SingleOrDefaultAsync(item => item.Id == userId);
-        if (user is null)
+        if (application is not null)
         {
-            return Forbid();
+            LinkApplicantAccount(application, user);
         }
 
         if (application is null && Input.ApplicationId is null &&
@@ -288,7 +335,10 @@ public class ApplyModel : PageModel
             StatusHistory = application.StatusHistory
                 .OrderByDescending(history => history.ChangedAtUtc)
                 .ToList();
-            Input.ResidenceHistory = ToResidenceInputs(application);
+            Input.SelectedApplicantId ??= FindApplicant(application, user.Id, user.Email)?.Id;
+            Input.ResidenceHistory = Input.SelectedApplicantId is int applicantId
+                ? ToResidenceInputs(application, applicantId)
+                : [];
         }
 
         if (application is not null && application.ApplicationStatusId is not (1 or 3))
@@ -306,12 +356,15 @@ public class ApplyModel : PageModel
                     return Page();
 
                 application ??= CreateApplication(user.Id, unit.Id);
-                if (!SetConcurrencyToken(application))
+                if (!SetApplicantConcurrencyToken(application, user.Id))
                     return StaleSave();
-                SaveApplicantInformation(application);
+                SaveApplicantInformation(application, user.Id);
+                if (!await SaveAdditionalApplicantsAsync(application))
+                    return Page();
                 if (!await TrySaveChangesAsync(application))
                     return StaleSave();
                 Input.ConcurrencyToken = Convert.ToBase64String(application.RowVersion);
+                Input.ApplicantConcurrencyToken = GetApplicantConcurrencyToken(application, user.Id);
                 Input.ApplicationId = application.Id;
                 Input.CurrentSection = "Residence";
                 return Page();
@@ -344,20 +397,35 @@ public class ApplyModel : PageModel
                 return Page();
 
             case "BackToResidence":
+                ModelState.Clear();
+                LoadApplicant(application!, user.Id, user.Email, Input.SelectedApplicantId);
                 Input.CurrentSection = "Residence";
                 return Page();
 
             case "SaveDraft":
                 ModelState.Clear();
                 ValidateApplicantInformation();
-                ValidateResidenceHistory();
+                if (Input.CurrentSection is "Residence" or "Summary")
+                    ValidateResidenceHistory();
                 application ??= CreateApplication(user.Id, unit.Id);
-                if (!SetConcurrencyToken(application))
-                    return StaleSave();
-                SaveApplicantInformation(application);
-                SaveDraftResidenceHistory(application);
+                if (Input.CurrentSection == "Application")
+                {
+                    if (!SetApplicantConcurrencyToken(application, user.Id))
+                        return StaleSave();
+                    SaveApplicantInformation(application, user.Id);
+                    if (!await SaveAdditionalApplicantsAsync(application))
+                        return Page();
+                }
+                if (Input.CurrentSection is "Residence" or "Summary")
+                {
+                    if (!SetConcurrencyToken(application))
+                        return StaleSave();
+                    SaveDraftResidenceHistory(application);
+                }
                 if (!await TrySaveChangesAsync(application))
                     return StaleSave();
+                if (application.Id > 0)
+                    Input.ApplicantConcurrencyToken = GetApplicantConcurrencyToken(application, user.Id);
                 return Page();
 
             case "Submit":
@@ -382,7 +450,11 @@ public class ApplyModel : PageModel
                 {
                     if (!SetConcurrencyToken(application!))
                         return StaleSave();
-                    SaveApplicantInformation(application!);
+                    if (!SetApplicantConcurrencyToken(application!, user.Id))
+                        return StaleSave();
+                    SaveApplicantInformation(application!, user.Id);
+                    if (!await SaveAdditionalApplicantsAsync(application!))
+                        return Page();
                     SaveResidenceHistory(application!);
                     application!.DraftResidenceHistoryJson = null;
                     await RecordStatusChangeAsync(application!, 2, user.Id, "Application submitted.");
@@ -403,22 +475,11 @@ public class ApplyModel : PageModel
         if (Input.ApplicationId is not int applicationId)
             return null;
 
-        var userId = Guid.TryParse(
-            User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
-            out var parsedUserId)
-            ? parsedUserId
-            : Guid.Empty;
-
-        return await _db.Applications
-            .Include(item => item.ApplicationResidenceHistory)
-            .Include(item => item.ApplicationStatus)
-            .Include(item => item.StatusHistory)
-                .ThenInclude(history => history.ApplicationStatus)
-            .Include(item => item.StatusHistory)
-                .ThenInclude(history => history.ChangedByUser)
+        var userId = CurrentUserId;
+        return await ApplicationQuery()
             .SingleOrDefaultAsync(item => item.Id == applicationId &&
                 item.UnitId == Input.UnitId &&
-                item.UserId == userId);
+                item.Applicants.Any(applicant => applicant.UserId == userId));
     }
 
     private bool SetConcurrencyToken(Application application)
@@ -445,6 +506,40 @@ public class ApplyModel : PageModel
                 "This application is stale. Reload it before saving your changes.");
             return false;
         }
+    }
+
+    private bool SetApplicantConcurrencyToken(Application application, Guid currentUserId)
+    {
+        var applicant = FindApplicant(application, currentUserId);
+        if (applicant is null || applicant.Id == 0)
+            return true;
+        if (string.IsNullOrWhiteSpace(Input.ApplicantConcurrencyToken))
+        {
+            ModelState.AddModelError(string.Empty,
+                "This applicant information is stale. Reload before saving your changes.");
+            return false;
+        }
+
+        try
+        {
+            _db.Entry(applicant).Property(item => item.RowVersion).OriginalValue =
+                Convert.FromBase64String(Input.ApplicantConcurrencyToken);
+            return true;
+        }
+        catch (FormatException)
+        {
+            ModelState.AddModelError(string.Empty,
+                "This applicant information is stale. Reload before saving your changes.");
+            return false;
+        }
+    }
+
+    private string? GetApplicantConcurrencyToken(Application application, Guid currentUserId)
+    {
+        var applicant = FindApplicant(application, currentUserId);
+        return applicant?.RowVersion is { Length: > 0 } rowVersion
+            ? Convert.ToBase64String(rowVersion)
+            : null;
     }
 
     private async Task<bool> TrySaveChangesAsync(Application application)
@@ -480,6 +575,19 @@ public class ApplyModel : PageModel
             ApplicationStatusId = 1
         };
         _db.Applications.Add(application);
+        var user = _db.Users.Local.SingleOrDefault(item => item.Id == userId);
+        if (user is not null)
+        {
+            application.Applicants.Add(new ApplicationApplicant
+            {
+                Application = application,
+                UserId = userId,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                IsPrimary = true
+            });
+        }
+
         _db.ApplicationStatusHistory.Add(new ApplicationStatusHistory
         {
             Application = application,
@@ -491,25 +599,205 @@ public class ApplyModel : PageModel
         return application;
     }
 
-    private void SaveApplicantInformation(Application application)
+    private IQueryable<Application> ApplicationQuery() =>
+        _db.Applications
+            .Include(item => item.Applicants)
+                .ThenInclude(applicant => applicant.User)
+            .Include(item => item.ApplicationResidenceHistory)
+            .Include(item => item.ApplicationStatus)
+            .Include(item => item.StatusHistory)
+                .ThenInclude(history => history.ApplicationStatus)
+            .Include(item => item.StatusHistory)
+                .ThenInclude(history => history.ChangedByUser)
+            .Include(item => item.ManagerNotes)
+                .ThenInclude(note => note.Manager);
+
+    private static ApplicationApplicant? FindApplicant(
+        Application application,
+        Guid currentUserId,
+        string? email = null,
+        int? applicantId = null) =>
+        (applicantId is int selectedId
+            ? application.Applicants.SingleOrDefault(item => item.Id == selectedId)
+            : null)
+        ?? application.Applicants.SingleOrDefault(item => item.UserId == currentUserId)
+        ?? application.Applicants.SingleOrDefault(item => item.IsPrimary)
+        ?? application.Applicants.FirstOrDefault();
+
+    private void LoadApplicant(
+        Application application,
+        Guid currentUserId,
+        string? email = null,
+        int? applicantId = null)
     {
-        application.LastModifiedAtUtc = DateTime.UtcNow;
-        application.FirstName = Input.FirstName?.Trim() ?? string.Empty;
-        application.LastName = Input.LastName?.Trim() ?? string.Empty;
-        application.Email = Input.Email?.Trim() ?? string.Empty;
-        application.PhoneNumber = Input.PhoneNumber?.Trim() ?? string.Empty;
-        application.CurrentStreetAddress = Input.CurrentStreetAddress?.Trim() ?? string.Empty;
-        application.CurrentCity = Input.CurrentCity?.Trim() ?? string.Empty;
-        application.CurrentState = Input.CurrentState?.Trim() ?? string.Empty;
-        application.CurrentZipCode = Input.CurrentZipCode?.Trim() ?? string.Empty;
+        var applicant = FindApplicant(application, currentUserId, email, applicantId);
+        if (applicant is null)
+            return;
+
+        Input.ApplicantConcurrencyToken = Convert.ToBase64String(applicant.RowVersion);
+        Input.FirstName = applicant.FirstName;
+        Input.LastName = applicant.LastName;
+        Input.Email = applicant.User.Email ?? string.Empty;
+        Input.PhoneNumber = applicant.PhoneNumber;
+        Input.CurrentStreetAddress = applicant.CurrentStreetAddress;
+        Input.CurrentCity = applicant.CurrentCity;
+        Input.CurrentState = applicant.CurrentState;
+        Input.CurrentZipCode = applicant.CurrentZipCode;
+    }
+
+    private static void LinkApplicantAccount(Application application, ApplicationUser user)
+    {
+        var applicant = application.Applicants.SingleOrDefault(item => item.UserId == user.Id);
+        if (applicant is not null && applicant.UserId != user.Id)
+        {
+            applicant.UserId = user.Id;
+            applicant.User = user;
+        }
+    }
+
+    private void SaveApplicantInformation(Application application, Guid currentUserId)
+    {
+        var applicant = application.Applicants.SingleOrDefault(item => item.UserId == currentUserId)
+            ?? (application.Id == 0
+                ? application.Applicants.SingleOrDefault(item => item.IsPrimary)
+                : null);
+        if (applicant is null)
+        {
+            applicant = new ApplicationApplicant
+            {
+                Application = application,
+                UserId = currentUserId,
+                IsPrimary = application.Applicants.Count == 0
+            };
+            _db.ApplicationApplicants.Add(applicant);
+        }
+
+        applicant.FirstName = Input.FirstName?.Trim() ?? string.Empty;
+        applicant.LastName = Input.LastName?.Trim() ?? string.Empty;
+        applicant.PhoneNumber = Input.PhoneNumber?.Trim() ?? string.Empty;
+        applicant.CurrentStreetAddress = Input.CurrentStreetAddress?.Trim() ?? string.Empty;
+        applicant.CurrentCity = Input.CurrentCity?.Trim() ?? string.Empty;
+        applicant.CurrentState = Input.CurrentState?.Trim() ?? string.Empty;
+        applicant.CurrentZipCode = Input.CurrentZipCode?.Trim() ?? string.Empty;
+
+        if (applicant.IsPrimary)
+        {
+            application.FirstName = applicant.FirstName;
+            application.LastName = applicant.LastName;
+            application.Email = applicant.User.Email ?? string.Empty;
+            application.PhoneNumber = applicant.PhoneNumber;
+            application.CurrentStreetAddress = applicant.CurrentStreetAddress;
+            application.CurrentCity = applicant.CurrentCity;
+            application.CurrentState = applicant.CurrentState;
+            application.CurrentZipCode = applicant.CurrentZipCode;
+        }
+
+    }
+
+    private async Task<bool> SaveAdditionalApplicantsAsync(Application application){
+        var submittedEmails = Input.AdditionalApplicants
+            .Where(input => input is not null)
+            .Select(input => input.Email?.Trim() ?? string.Empty)
+            .Where(email => email.Length > 0)
+            .ToArray();
+        var duplicateEmail = submittedEmails
+            .GroupBy(email => email, StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault(group => group.Count() > 1)
+            ?.Key;
+        if (duplicateEmail is not null)
+        {
+            ModelState.AddModelError("Input.AdditionalApplicants",
+                $"{duplicateEmail} has already been added.");
+            return false;
+        }
+
+        var emails = submittedEmails
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        var linkedUsers = await _db.Users
+            .Where(user => user.Email != null && emails.Contains(user.Email))
+            .ToDictionaryAsync(user => user.Email!, StringComparer.OrdinalIgnoreCase);
+
+        var retainedUserIds = linkedUsers.Values.Select(user => user.Id).ToHashSet();
+        var missingEmails = emails
+            .Where(email => !linkedUsers.ContainsKey(email))
+            .ToArray();
+        if (missingEmails.Length > 0)
+        {
+            ModelState.AddModelError("Input.AdditionalApplicants",
+                $"No account exists for: {string.Join(", ", missingEmails)}.");
+            return false;
+        }
+
+        var primaryApplicant = application.Applicants.SingleOrDefault(item => item.IsPrimary);
+        if (primaryApplicant is not null &&
+            linkedUsers.Values.Any(user => user.Id == primaryApplicant.UserId))
+        {
+            ModelState.AddModelError("Input.AdditionalApplicants",
+                "The primary applicant is already on this application.");
+            return false;
+        }
+
+        var removedApplicants = application.Applicants
+            .Where(applicant => !applicant.IsPrimary && !retainedUserIds.Contains(applicant.UserId))
+            .ToList();
+        _db.ApplicationApplicants.RemoveRange(removedApplicants);
+
+        foreach (var email in emails)
+        {
+            var user = linkedUsers[email];
+            if (application.Applicants.Any(item => item.UserId == user.Id))
+                continue;
+
+            if (await _db.Leases.AnyAsync(lease =>
+                    lease.StartDate <= DateTime.UtcNow.Date &&
+                    lease.EndDate >= DateTime.UtcNow.Date &&
+                    lease.Application.Applicants.Any(applicant => applicant.UserId == user.Id)))
+            {
+                ModelState.AddModelError("Input.AdditionalApplicants",
+                    $"{email} is already associated with a current lease.");
+                return false;
+            }
+
+            if (await _db.Applications.AnyAsync(otherApplication =>
+                    otherApplication.Id != application.Id &&
+                    otherApplication.UnitId == application.UnitId &&
+                    otherApplication.ApplicationStatusId == 2 &&
+                    otherApplication.Applicants.Any(applicant => applicant.UserId == user.Id)))
+            {
+                ModelState.AddModelError("Input.AdditionalApplicants",
+                    $"{email} is already an applicant on another submitted application for this unit.");
+                return false;
+            }
+
+            application.Applicants.Add(new ApplicationApplicant
+            {
+                Application = application,
+                UserId = user.Id,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                IsPrimary = false,
+                PhoneNumber = user.PhoneNumber ?? string.Empty
+            });
+        }
+
+        return true;
     }
 
     private void SaveResidenceHistory(Application application, bool allowIncomplete = false)
     {
+        var applicantId = Input.SelectedApplicantId;
+        if (applicantId is null)
+            return;
+
         application.LastModifiedAtUtc = DateTime.UtcNow;
-        application.DraftResidenceHistoryJson = null;
-        _db.ApplicationResidenceHistory.RemoveRange(application.ApplicationResidenceHistory);
-        application.ApplicationResidenceHistory.Clear();
+        var applicantHistory = application.ApplicationResidenceHistory
+            .Where(history => history.ApplicantId == applicantId.Value)
+            .ToList();
+        _db.ApplicationResidenceHistory.RemoveRange(applicantHistory);
+        foreach (var history in applicantHistory)
+            application.ApplicationResidenceHistory.Remove(history);
         var residences = allowIncomplete
             ? Input.ResidenceHistory.Where(HasCompleteResidenceData)
             : Input.ResidenceHistory;
@@ -518,6 +806,7 @@ public class ApplyModel : PageModel
             _db.ApplicationResidenceHistory.Add(new ApplicationResidenceHistory
             {
                 ApplicationId = application.Id,
+                ApplicantId = applicantId.Value,
                 StreetAddress = residence.StreetAddress.Trim(),
                 City = residence.City.Trim(),
                 State = residence.State.Trim(),
@@ -529,22 +818,91 @@ public class ApplyModel : PageModel
                 MoveOutDate = residence.MoveOutDate
             });
         }
+        RemoveDraftResidenceHistory(application, applicantId.Value);
     }
 
     private void SaveDraftResidenceHistory(Application application)
     {
+        var applicantId = Input.SelectedApplicantId;
+        if (applicantId is null)
+            return;
+
         application.LastModifiedAtUtc = DateTime.UtcNow;
-        application.DraftResidenceHistoryJson = JsonSerializer.Serialize(Input.ResidenceHistory);
+        SaveDraftResidenceHistory(application, applicantId.Value, Input.ResidenceHistory);
         var completeResidences = Input.ResidenceHistory.Where(HasCompleteResidenceData).ToList();
         if (completeResidences.Count > 0)
-        {
             SaveResidenceHistory(application, allowIncomplete: true);
-            application.DraftResidenceHistoryJson = JsonSerializer.Serialize(Input.ResidenceHistory);
+    }
+
+    private static List<ResidenceHistoryInput>? LoadDraftResidenceHistory(
+        Application application,
+        int applicantId)
+    {
+        if (string.IsNullOrWhiteSpace(application.DraftResidenceHistoryJson))
+            return null;
+
+        try
+        {
+            var drafts = JsonSerializer.Deserialize<Dictionary<int, List<ResidenceHistoryInput>>>(
+                application.DraftResidenceHistoryJson);
+            return drafts?.TryGetValue(applicantId, out var history) == true ? history : null;
+        }
+        catch (JsonException)
+        {
+            return null;
         }
     }
 
-    private static List<ResidenceHistoryInput> ToResidenceInputs(Application application) =>
+    private static void SaveDraftResidenceHistory(
+        Application application,
+        int applicantId,
+        List<ResidenceHistoryInput> history)
+    {
+        Dictionary<int, List<ResidenceHistoryInput>> drafts;
+        try
+        {
+            drafts = string.IsNullOrWhiteSpace(application.DraftResidenceHistoryJson)
+                ? new Dictionary<int, List<ResidenceHistoryInput>>()
+                : JsonSerializer.Deserialize<Dictionary<int, List<ResidenceHistoryInput>>>(
+                      application.DraftResidenceHistoryJson)
+                  ?? new Dictionary<int, List<ResidenceHistoryInput>>();
+        }
+        catch (JsonException)
+        {
+            drafts = new Dictionary<int, List<ResidenceHistoryInput>>();
+        }
+
+        drafts[applicantId] = history;
+        application.DraftResidenceHistoryJson = JsonSerializer.Serialize(drafts);
+    }
+
+    private static void RemoveDraftResidenceHistory(Application application, int applicantId)
+    {
+        if (string.IsNullOrWhiteSpace(application.DraftResidenceHistoryJson))
+            return;
+
+        Dictionary<int, List<ResidenceHistoryInput>>? drafts;
+        try
+        {
+            drafts = JsonSerializer.Deserialize<Dictionary<int, List<ResidenceHistoryInput>>>(
+                application.DraftResidenceHistoryJson);
+        }
+        catch (JsonException)
+        {
+            return;
+        }
+
+        if (drafts is null || !drafts.Remove(applicantId))
+            return;
+
+        application.DraftResidenceHistoryJson = drafts.Count == 0
+            ? null
+            : JsonSerializer.Serialize(drafts);
+    }
+
+    private static List<ResidenceHistoryInput> ToResidenceInputs(Application application, int applicantId) =>
         application.ApplicationResidenceHistory
+            .Where(history => history.ApplicantId == applicantId)
             .OrderByDescending(history => history.MoveInDate)
             .ThenByDescending(history => history.Id)
             .Select(history => new ResidenceHistoryInput
@@ -606,8 +964,13 @@ public class ApplyModel : PageModel
             return BadRequest("The review comment cannot exceed 1000 characters.");
         }
 
-        var userIdValue = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        if (!Guid.TryParse(userIdValue, out var userId))
+        if (targetStatus != "Approved" && leaseStartDate.HasValue)
+        {
+            return BadRequest("A lease start date can only be provided when approving an application.");
+        }
+
+        var userId = CurrentUserId;
+        if (userId == Guid.Empty)
         {
             return Forbid();
         }
@@ -621,7 +984,8 @@ public class ApplyModel : PageModel
                         assignment.ManagerId == userId &&
                         assignment.PropertyId == item.Unit.PropertyId) &&
                       item.ClaimedByManagerId == userId
-                    : item.UserId == userId));
+                    : item.Applicants.Any(applicant =>
+                        applicant.UserId == userId)));
         if (application is null)
         {
             return NotFound();
@@ -686,9 +1050,7 @@ public class ApplyModel : PageModel
         applicationStatusId is 1 or 3;
 
     private bool TryGetCurrentUserId(out Guid userId) =>
-        Guid.TryParse(
-            User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
-            out userId);
+        (userId = CurrentUserId) != Guid.Empty;
 
     private async Task RecordStatusChangeAsync(Application application, int applicationStatusId, Guid changedByUserId, string? comment)
     {
@@ -713,11 +1075,7 @@ public class ApplyModel : PageModel
 
     private Task<Unit?> LoadUnitAsync(int unitId)
     {
-        var managerId = Guid.TryParse(
-            User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
-            out var parsedManagerId)
-            ? parsedManagerId
-            : Guid.Empty;
+        var managerId = CurrentUserId;
 
         return _db.Units
             .Include(unit => unit.Property)
@@ -745,10 +1103,10 @@ public class ApplyModel : PageModel
         public string CurrentSection { get; set; } = "Application";
         public string? ReviewComment { get; set; }
         public int? ApplicationId { get; set; }
+        public int? SelectedApplicantId { get; set; }
         public string? ConcurrencyToken { get; set; }
+        public string? ApplicantConcurrencyToken { get; set; }
         public int UnitId { get; set; }
-        public List<int> ResidenceIds { get; set; } = [];
-
         [Required(ErrorMessage = "First name is required."), StringLength(50, ErrorMessage = "First name must be 50 characters or fewer.")]
         public string FirstName { get; set; } = string.Empty;
 
@@ -773,8 +1131,14 @@ public class ApplyModel : PageModel
         [Required(ErrorMessage = "ZIP code is required."), StringLength(10, ErrorMessage = "ZIP code must be 10 characters or fewer.")]
         public string CurrentZipCode { get; set; } = string.Empty;
 
-        [MinLength(1)]
         public List<ResidenceHistoryInput> ResidenceHistory { get; set; } = [];
+        public List<AdditionalApplicantInput> AdditionalApplicants { get; set; } = [];
+    }
+
+    public class AdditionalApplicantInput
+    {
+        [EmailAddress, StringLength(256)]
+        public string Email { get; set; } = string.Empty;
     }
 
     private static bool HasResidenceData(ResidenceHistoryInput residence)
@@ -836,7 +1200,8 @@ public class ApplyModel : PageModel
 
     private void ValidateResidenceHistory()
     {
-        if (Input.ResidenceHistory.Count == 0)
+        if (Input.ResidenceHistory.Count == 0 ||
+            Input.ResidenceHistory.All(residence => !HasResidenceData(residence)))
         {
             ModelState.AddModelError("Input.ResidenceHistory", "Add at least one residence.");
             return;
@@ -902,12 +1267,10 @@ public class ApplyModel : PageModel
     }
 
     private Task<Application?> FindExistingApplicationAsync(int unitId, Guid userId) =>
-        _db.Applications
-            .Include(item => item.ApplicationResidenceHistory)
-            .Include(item => item.ApplicationStatus)
-            .Include(item => item.StatusHistory)
+        ApplicationQuery()
             .Where(item => item.UnitId == unitId &&
-                           item.UserId == userId &&
+                           item.Applicants.Any(applicant =>
+                               applicant.UserId == userId) &&
                            new[] { 1, 2, 3, 4 }.Contains(item.ApplicationStatusId))
             .OrderByDescending(item => item.Id)
             .FirstOrDefaultAsync();

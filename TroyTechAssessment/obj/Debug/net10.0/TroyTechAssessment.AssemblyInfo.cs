@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TroyTechAssessment")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+aa67480cfb1e9acfbae250d98fdeb8ae9400b423")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+12f53751f981b755417111080c757d42b5097de6")]
 [assembly: System.Reflection.AssemblyProductAttribute("TroyTechAssessment")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TroyTechAssessment")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

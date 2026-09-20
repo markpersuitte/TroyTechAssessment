@@ -63,6 +63,7 @@ The seed operation creates:
 - Properties and manager-property assignments.
 - Unit types and units.
 - Applications across the supported statuses.
+- Multiple applicants per application, including applicant-specific residence history. Additional applicants must be existing user accounts; the application stores their `UserId` and reads email addresses from `AspNetUsers`.
 - Application status history.
 - Lease data.
 
@@ -102,8 +103,8 @@ The tests cover lease rules, residence date validation, application workflow met
 
 There are two roles:
 
-- **Applicant**: browses available units, creates and edits Draft/Returned applications, saves drafts, submits applications, withdraws submitted applications, and views application history.
-- **Manager**: manages assigned properties and units, claims and releases submitted applications, reviews claimed applications, manages leases, and adds or edits their own private manager notes.
+- **Applicant**: browses available units, creates and edits Draft/Returned applications, saves drafts, submits applications, withdraws submitted applications, and views application history. Applicants can add existing user accounts as additional applicants through the application form; duplicate and primary-applicant entries are rejected, and each associated applicant may view/edit the application when ownership checks allow.
+- **Manager**: manages assigned properties and units, claims and releases submitted applications, reviews claimed applications, manages leases, and adds or edits their own private manager notes. Managers can select applicants from a dropdown to review each applicant's information and residence history, but applicant information is read-only to managers.
 
 Application statuses are:
 
@@ -168,6 +169,6 @@ Check the migration history table and the current database schema. Do not reset 
 
 ## Current scope
 
-The application supports the complete single-applicant workflow and the listed optional features, including paging/sorting, JSON/OpenAPI list endpoints, review queue claims, manager note history, invalid draft saves, and stale-save detection.
+The application supports the complete multi-applicant workflow and the listed optional features, including paging/sorting, database-side application filters, JSON/OpenAPI list endpoints, review queue claims, manager note history, invalid draft saves, applicant-specific residence histories, and stale-save detection.
 
-Multi-applicant applications are not currently implemented.
+Applications can include multiple applicants. Each applicant must have an existing account and has an independent residence-history collection; selecting a different applicant in the manager view never substitutes another applicant's residences. Applicants can view and edit applications associated with their accounts. Applicant-information and residence-history saves use separate concurrency tokens, and stale saves are rejected with a reload message. Managers can review applicant names and account emails but cannot edit applicant information.

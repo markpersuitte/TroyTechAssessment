@@ -44,6 +44,12 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     await db.Database.MigrateAsync();
+    await db.Database.ExecuteSqlRawAsync("""
+        IF COL_LENGTH('dbo.ApplicationApplicants', 'Email') IS NOT NULL
+        BEGIN
+            ALTER TABLE [ApplicationApplicants] DROP COLUMN [Email];
+        END;
+        """);
     await DatabaseSeeder.SeedAsync(scope.ServiceProvider);
 }
 

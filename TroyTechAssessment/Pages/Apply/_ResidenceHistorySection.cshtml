@@ -2,6 +2,7 @@
 
 <section id="residence-step" data-apply-step class="@((Model.Input.CurrentSection == "Residence" || Model.IsReadOnly) ? string.Empty : "d-none")">
     <h2 class="h4">Residence history</h2>
+    <div asp-validation-summary="All" class="text-danger"></div>
     <div id="residence-history-rows">
         @for (var index = 0; index < Model.Input.ResidenceHistory.Count; index++)
         {
@@ -17,12 +18,10 @@
                                 residenceId = residence.Id
                             })">Edit</button>
                         <button type="button" class="btn btn-outline-danger"
-                                data-delete-url="@Url.Action("Delete", "Residence", new
-                             {
-                                 applicationId = Model.Input.ApplicationId,
-                                 residenceId = residence.Id
-                             })"
-                                data-concurrency-token="@Model.Input.ConcurrencyToken">Remove</button>
+                                data-bs-toggle="modal"
+                                data-bs-target="#deleteResidenceModal-@residence.Id">
+                            Remove
+                        </button>
                     </div>
                 }
                 <h3 class="h6">Residence @(index + 1)</h3>

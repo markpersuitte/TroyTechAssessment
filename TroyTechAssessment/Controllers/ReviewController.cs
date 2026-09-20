@@ -33,6 +33,9 @@ public class ReviewController : Controller
             ModelState.AddModelError(nameof(input.Outcome), "Select a valid outcome.");
         if (outcome is "Return" or "Deny" && string.IsNullOrWhiteSpace(input.Comment))
             ModelState.AddModelError(nameof(input.Comment), "A comment is required for this outcome.");
+        if (outcome is not "Approve" && input.LeaseStartDate.HasValue)
+            ModelState.AddModelError(nameof(input.LeaseStartDate),
+                "A lease start date can only be provided when approving an application.");
         if (outcome == "Approve" && input.LeaseStartDate is null)
             ModelState.AddModelError(nameof(input.LeaseStartDate), "A lease start date is required.");
         if (input.Comment?.Length > 1000)
@@ -44,14 +47,14 @@ public class ReviewController : Controller
         if (application is null) return NotFound();
         if (!SetConcurrencyToken(application, input.ConcurrencyToken))
             return BadRequest("This application is stale. Reload it before reviewing.");
-        if (!ModelState.IsValid) return BadRequest(PartialView("_ReviewModal", input));
+        if (!ModelState.IsValid) return PartialView("_ReviewModal", input);
 
         await using var transaction = await _db.Database.BeginTransactionAsync(
             System.Data.IsolationLevel.Serializable);
         if (outcome == "Approve" && await HasActiveLeaseAsync(application.UnitId))
         {
             ModelState.AddModelError(string.Empty, "This unit already has an active lease.");
-            return BadRequest(PartialView("_ReviewModal", input));
+            return PartialView("_ReviewModal", input);
         }
 
         var statusName = outcome == "Approve" ? "Approved" : outcome == "Return" ? "Returned" : "Denied";
@@ -64,14 +67,14 @@ public class ReviewController : Controller
             {
                 ModelState.AddModelError(nameof(input.LeaseStartDate),
                     "The lease start date cannot be in the past.");
-                return BadRequest(PartialView("_ReviewModal", input));
+                return PartialView("_ReviewModal", input);
             }
 
             var end = Lease.CalculateEndDate(start);
             if (await HasLeaseOverlapAsync(application.UnitId, start, end))
             {
                 ModelState.AddModelError(string.Empty, "This unit already has a lease for that term.");
-                return BadRequest(PartialView("_ReviewModal", input));
+                return PartialView("_ReviewModal", input);
             }
 
             _db.Leases.Add(new Lease

@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Reflection;
 using TroyTechAssessment.Data;
+using TroyTechAssessment.Pages;
 
 namespace TroyTechAssessment.Tests;
 
@@ -183,5 +184,66 @@ public class ApplicationWorkflowTests
         Assert.Same(manager, note.Manager);
         Assert.Contains(note, application.ManagerNotes);
         Assert.Contains(note, manager.ManagerNotes);
+    }
+}
+
+public class MultiApplicantWorkflowTests
+{
+    [Fact]
+    public void Application_CanContainMultipleApplicants_WithOnePrimaryApplicant()
+    {
+        var application = new Application();
+        var primary = new ApplicationApplicant
+        {
+            Application = application,
+            UserId = Guid.NewGuid(),
+            IsPrimary = true
+        };
+        var additional = new ApplicationApplicant
+        {
+            Application = application,
+            UserId = Guid.NewGuid()
+        };
+
+        application.Applicants.Add(primary);
+        application.Applicants.Add(additional);
+
+        Assert.Equal(2, application.Applicants.Count);
+        Assert.Single(application.Applicants, applicant => applicant.IsPrimary);
+        Assert.NotEqual(Guid.Empty, additional.UserId);
+        Assert.Contains(additional, application.Applicants);
+    }
+
+    [Fact]
+    public void ApplicationApplicant_UsesRequiredUserId()
+    {
+        var userId = typeof(ApplicationApplicant).GetProperty(nameof(ApplicationApplicant.UserId));
+
+        Assert.NotNull(userId);
+        Assert.Equal(typeof(Guid), userId!.PropertyType);
+    }
+
+    [Fact]
+    public void ApplicantAndApplicationHaveIndependentConcurrencyTokens()
+    {
+        var applicationRowVersion = typeof(Application)
+            .GetProperty(nameof(Application.RowVersion));
+        var applicantRowVersion = typeof(ApplicationApplicant)
+            .GetProperty(nameof(ApplicationApplicant.RowVersion));
+
+        Assert.NotNull(applicationRowVersion?.GetCustomAttribute<TimestampAttribute>());
+        Assert.NotNull(applicantRowVersion?.GetCustomAttribute<TimestampAttribute>());
+        Assert.NotSame(applicationRowVersion, applicantRowVersion);
+    }
+
+    [Fact]
+    public void AdditionalApplicantInput_OnlyAcceptsEmailAsSubmittedIdentity()
+    {
+        var properties = typeof(ApplyModel.AdditionalApplicantInput)
+            .GetProperties()
+            .Select(property => property.Name)
+            .ToArray();
+
+        Assert.Equal(new[] { "Email" }, properties);
     }
 }

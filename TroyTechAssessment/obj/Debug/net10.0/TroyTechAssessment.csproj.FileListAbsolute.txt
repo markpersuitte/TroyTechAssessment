@@ -233,5 +233,6 @@
 /home/mark/RiderProjects/TroyTechAssessment/TroyTechAssessment/bin/Debug/net10.0/zh-Hans/Microsoft.CodeAnalysis.Workspaces.MSBuild.resources.dll
 /home/mark/RiderProjects/TroyTechAssessment/TroyTechAssessment/bin/Debug/net10.0/zh-Hant/Microsoft.CodeAnalysis.Workspaces.MSBuild.resources.dll
 /home/mark/RiderProjects/TroyTechAssessment/TroyTechAssessment/obj/Debug/net10.0/compressed/ygveaypdcf-{0}-8it763lz2l-8it763lz2l.gz
-/home/mark/RiderProjects/TroyTechAssessment/TroyTechAssessment/obj/Debug/net10.0/compressed/fr2xj4or2k-{0}-vod0cdmnt6-vod0cdmnt6.gz
 /home/mark/RiderProjects/TroyTechAssessment/TroyTechAssessment/obj/Debug/net10.0/compressed/aq465t2hl4-{0}-r4y9isqb6h-r4y9isqb6h.gz
+/home/mark/RiderProjects/TroyTechAssessment/TroyTechAssessment/obj/Debug/net10.0/TroyTechAssessment.sourcelink.json
+/home/mark/RiderProjects/TroyTechAssessment/TroyTechAssessment/obj/Debug/net10.0/compressed/fr2xj4or2k-{0}-9qcg84mknz-9qcg84mknz.gz

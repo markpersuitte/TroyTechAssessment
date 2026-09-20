@@ -157,3 +157,5 @@
 /home/mark/RiderProjects/TroyTechAssessment/TroyTechAssessment.Tests/obj/Debug/net10.0/TroyTechAssessment.Tests.pdb
 /home/mark/RiderProjects/TroyTechAssessment/TroyTechAssessment.Tests/obj/Debug/net10.0/TroyTechAssessment.Tests.genruntimeconfig.cache
 /home/mark/RiderProjects/TroyTechAssessment/TroyTechAssessment.Tests/obj/Debug/net10.0/ref/TroyTechAssessment.Tests.dll
+/home/mark/RiderProjects/TroyTechAssessment/TroyTechAssessment.Tests/obj/Debug/net10.0/TroyTechAssessment.Tests.sourcelink.json
+/home/mark/RiderProjects/TroyTechAssessment/TroyTechAssessment.Tests/bin/Debug/net10.0/Microsoft.EntityFrameworkCore.InMemory.dll

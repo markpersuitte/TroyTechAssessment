@@ -5,51 +5,92 @@
     <div class="row">
         <div class="col-md-6 mb-3">
             <label asp-for="Input.FirstName" class="form-label">First Name</label>
-            <input asp-for="Input.FirstName" class="form-control" readonly="@Model.IsReadOnly" required />
+            <input asp-for="Input.FirstName" class="form-control"
+                   readonly="@(Model.IsReadOnly || User.IsInRole("Manager"))" required />
             <span asp-validation-for="Input.FirstName" class="text-danger"></span>
         </div>
         <div class="col-md-6 mb-3">
             <label asp-for="Input.LastName" class="form-label">Last Name</label>
-            <input asp-for="Input.LastName" class="form-control" readonly="@Model.IsReadOnly" required />
+            <input asp-for="Input.LastName" class="form-control"
+                   readonly="@(Model.IsReadOnly || User.IsInRole("Manager"))" required />
             <span asp-validation-for="Input.LastName" class="text-danger"></span>
         </div>
     </div>
     <div class="row">
         <div class="col-md-6 mb-3">
             <label asp-for="Input.Email" class="form-label"></label>
-            <input asp-for="Input.Email" class="form-control" readonly="@Model.IsReadOnly" required />
+            <input asp-for="Input.Email" class="form-control" readonly required />
             <span asp-validation-for="Input.Email" class="text-danger"></span>
         </div>
         <div class="col-md-6 mb-3">
             <label asp-for="Input.PhoneNumber" class="form-label">Phone number</label>
-            <input asp-for="Input.PhoneNumber" class="form-control" autocomplete="tel" readonly="@Model.IsReadOnly" required />
+            <input asp-for="Input.PhoneNumber" class="form-control" autocomplete="tel"
+                   readonly="@(Model.IsReadOnly || User.IsInRole("Manager"))" required />
             <span asp-validation-for="Input.PhoneNumber" class="text-danger"></span>
         </div>
     </div>
     <div class="mb-3">Current Address</div>
     <div class="mb-3">
         <label asp-for="Input.CurrentStreetAddress" class="form-label">Street Address</label>
-        <input asp-for="Input.CurrentStreetAddress" class="form-control" readonly="@Model.IsReadOnly" required />
+        <input asp-for="Input.CurrentStreetAddress" class="form-control"
+               readonly="@(Model.IsReadOnly || User.IsInRole("Manager"))" required />
         <span asp-validation-for="Input.CurrentStreetAddress" class="text-danger"></span>
     </div>
     <div class="row">
         <div class="col-md-5 mb-3">
             <label asp-for="Input.CurrentCity" class="form-label">City</label>
-            <input asp-for="Input.CurrentCity" class="form-control" readonly="@Model.IsReadOnly" required />
+            <input asp-for="Input.CurrentCity" class="form-control"
+                   readonly="@(Model.IsReadOnly || User.IsInRole("Manager"))" required />
             <span asp-validation-for="Input.CurrentCity" class="text-danger"></span>
         </div>
         <div class="col-md-3 mb-3">
             <label asp-for="Input.CurrentState" class="form-label">State</label>
-            <input asp-for="Input.CurrentState" class="form-control" readonly="@Model.IsReadOnly" required />
+            <input asp-for="Input.CurrentState" class="form-control"
+                   readonly="@(Model.IsReadOnly || User.IsInRole("Manager"))" required />
             <span asp-validation-for="Input.CurrentState" class="text-danger"></span>
         </div>
         <div class="col-md-4 mb-3">
             <label asp-for="Input.CurrentZipCode" class="form-label">Zip Code</label>
-            <input asp-for="Input.CurrentZipCode" class="form-control" readonly="@Model.IsReadOnly" required />
+            <input asp-for="Input.CurrentZipCode" class="form-control"
+                   readonly="@(Model.IsReadOnly || User.IsInRole("Manager"))" required />
             <span asp-validation-for="Input.CurrentZipCode" class="text-danger"></span>
         </div>
     </div>
-    @if (!Model.IsReadOnly)
+    <div class="row">
+        <hr />
+        <h3 class="h5">Additional applicants</h3>
+        <p class="text-muted">Additional applicants are optional. Add an email address for each existing account.</p>
+        <div id="additional-applicants" class="mb-2">
+            @for (var index = 0; index < Model.Input.AdditionalApplicants.Count; index++)
+            {
+                var applicant = Model.Input.AdditionalApplicants[index];
+                <div class="additional-applicant d-flex align-items-center gap-2 mb-2">
+                    <input type="hidden" name="Input.AdditionalApplicants[@index].Email"
+                           value="@applicant.Email" />
+                    <span>@applicant.Email</span>
+                    @if (!Model.IsReadOnly && User.IsInRole("Applicant"))
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-danger remove-additional-applicant">
+                            Remove
+                        </button>
+                    }
+                </div>
+            }
+        </div>
+        @if (!Model.IsReadOnly && User.IsInRole("Applicant"))
+        {
+            <div class="input-group mt-2 col-6">
+                <input type="email" id="additional-applicant-email" class="form-control"
+                       placeholder="Email address" maxlength="256" />
+                <button type="button" id="add-additional-applicant"
+                        class="btn btn-outline-secondary">
+                    Add
+                </button>
+            </div>
+            <div id="additional-applicant-error" class="text-danger mt-1"></div>
+        }
+    </div>
+    @if (!Model.IsReadOnly && User.IsInRole("Applicant"))
     {
         <div class="mt-4">
             <button type="submit" name="Input.Action" value="SaveDraft"

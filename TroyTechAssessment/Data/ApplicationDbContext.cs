@@ -21,6 +21,7 @@ namespace TroyTechAssessment.Data
         public DbSet<Unit> Units { get; set; }
         public DbSet<Application> Applications  { get; set; }
         public DbSet<ApplicationResidenceHistory> ApplicationResidenceHistory { get; set; }
+        public DbSet<ApplicationApplicant> ApplicationApplicants { get; set; }
         public DbSet<ApplicationStatus> ApplicationStatuses { get; set; }
         public DbSet<ApplicationStatusHistory> ApplicationStatusHistory { get; set; }
         public DbSet<Lease> Leases { get; set; }
@@ -57,6 +58,28 @@ namespace TroyTechAssessment.Data
                 .WithMany()
                 .HasForeignKey(application => application.ApplicationStatusId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ApplicationApplicant>()
+                .HasOne(applicant => applicant.Application)
+                .WithMany(application => application.Applicants)
+                .HasForeignKey(applicant => applicant.ApplicationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ApplicationApplicant>()
+                .HasOne(applicant => applicant.User)
+                .WithMany()
+                .HasForeignKey(applicant => applicant.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ApplicationApplicant>()
+                .HasIndex(applicant => new { applicant.ApplicationId, applicant.UserId })
+                .IsUnique();
+
+            modelBuilder.Entity<ApplicationResidenceHistory>()
+                .HasOne(history => history.Applicant)
+                .WithMany()
+                .HasForeignKey(history => history.ApplicantId)
+                .OnDelete(DeleteBehavior.NoAction);
 
             modelBuilder.Entity<Application>()
                 .HasOne(application => application.Unit)

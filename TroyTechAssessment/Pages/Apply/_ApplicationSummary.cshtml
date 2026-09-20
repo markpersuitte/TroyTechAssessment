@@ -1,6 +1,8 @@
 @model TroyTechAssessment.Pages.ApplyModel
 
-<section id="application-summary" class="@((Model.Input.CurrentSection == "Summary" || Model.IsReadOnly) ? string.Empty : "d-none") mt-4" data-apply-step>
+<section id="application-summary"
+         class="@((Model.Input.CurrentSection == "Summary" || Model.IsReadOnly || User.IsInRole("Manager")) ? string.Empty : "d-none") mt-4"
+         data-apply-step>
     <h2 class="h4">Summary</h2>
     @if (Model.ModelState.ErrorCount > 0)
     {
@@ -64,18 +66,19 @@
             </div>
         </div>
     </div>
-    <div class="mt-4">
-        @if (!Model.IsReadOnly)
-        {
-            <button type="submit" name="Input.Action" value="BackToResidence" class="btn btn-secondary" formnovalidate>Previous</button>
-            <button type="submit" name="Input.Action" value="SaveDraft"
-                    class="btn btn-outline-primary" formnovalidate>
-                Save Draft
-            </button>
-            <button type="submit" name="Input.Action" value="Submit" class="btn btn-primary">
-                Submit application
-            </button>
-        }
-        <a asp-page="/Index" class="btn btn-secondary">Cancel</a>
-    </div>
+    @if (!User.IsInRole("Manager")){
+        <div class="mt-4">
+            @if (!Model.IsReadOnly){
+                <button type="submit" name="Input.Action" value="BackToResidence" class="btn btn-secondary" formnovalidate>Previous</button>
+                <button type="submit" name="Input.Action" value="SaveDraft"
+                        class="btn btn-outline-primary" formnovalidate>
+                    Save Draft
+                </button>
+                <button type="submit" name="Input.Action" value="Submit" class="btn btn-primary">
+                    Submit application
+                </button>
+            }
+            <a asp-page="/Index" class="btn btn-secondary">Cancel</a>
+        </div>
+    }
 </section>

@@ -7,6 +7,8 @@ public class ApplicationResidenceHistory{
     [Key] public int Id  { get; set; }
     [Required] public int ApplicationId { get; set; }
     [ForeignKey(nameof(ApplicationId))] public Application Application{ get; set; } = null!;
+    [Required] public int ApplicantId { get; set; }
+    [ForeignKey(nameof(ApplicantId))] public ApplicationApplicant Applicant { get; set; } = null!;
     [MaxLength(100)]
     [Required] public string StreetAddress { get; set; } = string.Empty;
     [MaxLength(50)]

@@ -6,14 +6,16 @@ public class ConfirmModalViewComponent : ViewComponent
 {
     public IViewComponentResult Invoke(string modalId, string text, string action, string page = "/Index",
         int? unitId = null, int? propertyId = null, int? unitTypeId = null, bool informational = false,
-        string? controller = null, string? controllerAction = null)
+        string? controller = null, string? controllerAction = null, int? applicationId = null,
+        int? residenceId = null, string? concurrencyToken = null)
     {
         return View(new ConfirmModalModel(
             modalId, text, action, page, unitId, propertyId, unitTypeId, informational,
-            controller, controllerAction));
+            controller, controllerAction, applicationId, residenceId, concurrencyToken));
     }
 
     public sealed record ConfirmModalModel(string ModalId, string Text, string Action, string Page,
         int? UnitId, int? PropertyId, int? UnitTypeId, bool Informational,
-        string? Controller, string? ControllerAction);
+        string? Controller, string? ControllerAction, int? ApplicationId, int? ResidenceId,
+        string? ConcurrencyToken);
 }

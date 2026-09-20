@@ -60,61 +60,68 @@ public class ApplicationsModel : PageModel
             return Forbid();
         }
         CurrentManagerId = isManager ? userId : null;
+        var isJsonRequest = string.Equals(
+            Request.Query["handler"],
+            "Json",
+            StringComparison.OrdinalIgnoreCase);
 
-        var visiblePropertyQuery = _db.Properties.AsNoTracking();
-
-        if (isManager)
+        if (!isJsonRequest)
         {
-            visiblePropertyQuery = visiblePropertyQuery.Where(property =>
-                _db.ManagerProperties.Any(assignment =>
-                    assignment.ManagerId == userId &&
-                    assignment.PropertyId == property.Id));
-        }
-        else
-        {
-            visiblePropertyQuery = visiblePropertyQuery.Where(property =>
-                _db.Applications.Any(application =>
-                    application.UserId == userId &&
-                    application.Unit.PropertyId == property.Id));
-        }
-
-        PropertyOptions = await visiblePropertyQuery
-            .OrderBy(property => property.Name)
-            .Select(property => new SelectListItem
+            var visiblePropertyQuery = _db.Properties.AsNoTracking();
+            if (isManager)
             {
-                Value = property.Id.ToString(),
-                Text = property.Name,
-                Selected = PropertyId == property.Id
-            })
-            .ToListAsync();
-        PropertyOptions.Insert(0, new SelectListItem
-        {
-            Value = "",
-            Text = "All properties",
-            Selected = !PropertyId.HasValue
-        });
-
-        StatusOptions = await _db.ApplicationStatuses
-            .AsNoTracking()
-            .OrderBy(status => status.Id)
-            .Select(status => new SelectListItem
+                visiblePropertyQuery = visiblePropertyQuery.Where(property =>
+                    _db.ManagerProperties.Any(assignment =>
+                        assignment.ManagerId == userId &&
+                        assignment.PropertyId == property.Id));
+            }
+            else
             {
-                Value = status.Id.ToString(),
-                Text = status.Status,
-                Selected = StatusId.HasValue && status.Id == StatusId.Value
-            })
-            .ToListAsync();
+                visiblePropertyQuery = visiblePropertyQuery.Where(property =>
+                    _db.Applications.Any(application =>
+                        application.Applicants.Any(applicant =>
+                            applicant.UserId == userId) &&
+                        application.Unit.PropertyId == property.Id));
+            }
 
-        if (StatusId.HasValue)
-        {
-            StatusOptions.Insert(0, new SelectListItem { Value = "", Text = "All statuses", Selected = false });
-        }
-        else
-        {
-            StatusOptions.Insert(0, new SelectListItem { Value = "", Text = "All statuses", Selected = true });
+            PropertyOptions = await visiblePropertyQuery
+                .OrderBy(property => property.Name)
+                .Select(property => new SelectListItem
+                {
+                    Value = property.Id.ToString(),
+                    Text = property.Name,
+                    Selected = PropertyId == property.Id
+                })
+                .ToListAsync();
+            PropertyOptions.Insert(0, new SelectListItem
+            {
+                Value = "",
+                Text = "All properties",
+                Selected = !PropertyId.HasValue
+            });
+
+            StatusOptions = await _db.ApplicationStatuses
+                .AsNoTracking()
+                .OrderBy(status => status.Id)
+                .Select(status => new SelectListItem
+                {
+                    Value = status.Id.ToString(),
+                    Text = status.Status,
+                    Selected = StatusId.HasValue && status.Id == StatusId.Value
+                })
+                .ToListAsync();
+
+            StatusOptions.Insert(0, new SelectListItem
+            {
+                Value = "",
+                Text = "All statuses",
+                Selected = !StatusId.HasValue
+            });
         }
 
         var query = _db.Applications
+            .Include(application => application.Applicants)
+                .ThenInclude(applicant => applicant.User)
             .Include(application => application.Unit)
             .ThenInclude(unit => unit.Property)
             .Include(application => application.ApplicationStatus)
@@ -123,7 +130,9 @@ public class ApplicationsModel : PageModel
 
         if (isApplicant)
         {
-            query = query.Where(application => application.UserId == userId);
+            query = query.Where(application =>
+                application.Applicants.Any(applicant =>
+                    applicant.UserId == userId));
         }
         else
         {
@@ -156,6 +165,15 @@ public class ApplicationsModel : PageModel
                 || application.CurrentCity.Contains(searchText)
                 || application.CurrentState.Contains(searchText)
                 || application.CurrentZipCode.Contains(searchText)
+                || application.Applicants.Any(applicant =>
+                    applicant.FirstName.Contains(searchText)
+                    || applicant.LastName.Contains(searchText)
+                    || applicant.User.Email!.Contains(searchText)
+                    || applicant.PhoneNumber.Contains(searchText)
+                    || applicant.CurrentStreetAddress.Contains(searchText)
+                    || applicant.CurrentCity.Contains(searchText)
+                    || applicant.CurrentState.Contains(searchText)
+                    || applicant.CurrentZipCode.Contains(searchText))
                 || application.Unit.Number.Contains(searchText)
                 || application.Unit.Property.Name.Contains(searchText)
                 || application.ApplicationStatus.Status.Contains(searchText));
@@ -171,14 +189,22 @@ public class ApplicationsModel : PageModel
         query = Sort.ToLowerInvariant() switch
         {
             "applicant" => Direction == "desc"
-                ? query.OrderByDescending(application => application.LastName).ThenByDescending(application => application.FirstName)
-                : query.OrderBy(application => application.LastName).ThenBy(application => application.FirstName),
+                ? query.OrderByDescending(application => application.LastName)
+                    .ThenByDescending(application => application.FirstName)
+                    .ThenByDescending(application => application.Id)
+                : query.OrderBy(application => application.LastName)
+                    .ThenBy(application => application.FirstName)
+                    .ThenBy(application => application.Id),
             "property" => Direction == "desc"
                 ? query.OrderByDescending(application => application.Unit.Property.Name)
-                : query.OrderBy(application => application.Unit.Property.Name),
+                    .ThenByDescending(application => application.Id)
+                : query.OrderBy(application => application.Unit.Property.Name)
+                    .ThenBy(application => application.Id),
             "status" => Direction == "desc"
                 ? query.OrderByDescending(application => application.ApplicationStatus.Status)
-                : query.OrderBy(application => application.ApplicationStatus.Status),
+                    .ThenByDescending(application => application.Id)
+                : query.OrderBy(application => application.ApplicationStatus.Status)
+                    .ThenBy(application => application.Id),
             _ => Direction == "asc"
                 ? query.OrderBy(application => application.Id)
                 : query.OrderByDescending(application => application.Id)
@@ -205,9 +231,18 @@ public class ApplicationsModel : PageModel
             items = Applications.Select(application => new
             {
                 id = application.Id,
-                applicant = $"{application.FirstName} {application.LastName}",
-                email = application.Email,
-                phone = application.PhoneNumber,
+                applicant = string.Join(", ", application.Applicants
+                    .OrderByDescending(item => item.IsPrimary)
+                    .ThenBy(item => item.LastName)
+                    .Select(item => $"{item.FirstName} {item.LastName}")),
+                email = application.Applicants
+                    .OrderByDescending(item => item.IsPrimary)
+                    .Select(item => item.User.Email)
+                    .FirstOrDefault() ?? application.Email,
+                phone = application.Applicants
+                    .OrderByDescending(item => item.IsPrimary)
+                    .Select(item => item.PhoneNumber)
+                    .FirstOrDefault() ?? application.PhoneNumber,
                 property = application.Unit.Property.Name,
                 unit = application.Unit.Number,
                 status = application.ApplicationStatus.Status
@@ -249,7 +284,10 @@ public class ApplicationsModel : PageModel
                 "This application changed while it was being claimed. Refresh and try again.");
         }
         await transaction.CommitAsync();
-        return RedirectToPage(new { PageNumber, PageSize, Sort, Direction, StatusId, PropertyId, SearchTerm });
+        return RedirectToPage(new
+        {
+            PageNumber, PageSize, Sort, Direction, StatusId, PropertyId, SearchTerm, MyClaims
+        });
     }
 
     public async Task<IActionResult> OnPostReleaseAsync(int applicationId)
@@ -280,7 +318,10 @@ public class ApplicationsModel : PageModel
             return StatusCode(StatusCodes.Status409Conflict,
                 "This application changed while it was being released. Refresh and try again.");
         }
-        return RedirectToPage(new { PageNumber, PageSize, Sort, Direction, StatusId, PropertyId, SearchTerm });
+        return RedirectToPage(new
+        {
+            PageNumber, PageSize, Sort, Direction, StatusId, PropertyId, SearchTerm, MyClaims
+        });
     }
 
     private bool TryGetCurrentManagerId(out Guid managerId) =>

@@ -7,6 +7,27 @@
 <h1>@(Model.IsReadOnly ? "View application" : "Apply for unit " + Model.Unit.Number)</h1>
 
 <div id="server-modal-host"></div>
+<div class="modal fade" id="additionalApplicantAccountModal" tabindex="-1"
+     aria-labelledby="additionalApplicantAccountModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title fs-5" id="additionalApplicantAccountModalLabel">
+                    Account not found
+                </h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                No existing account was found for that email address.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary"
+                        data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 @if (Model.ApplicationStatus is not null)
 {
@@ -62,7 +83,8 @@
             <div class="modal-content">
                 <form method="post" asp-page-handler="Review"
                       asp-route-unitId="@Model.Input.UnitId"
-                      asp-route-applicationId="@Model.Input.ApplicationId">
+                      asp-route-applicationId="@Model.Input.ApplicationId"
+                      data-server-modal-form>
                     <div class="modal-header">
                         <h2 class="modal-title fs-5" id="reviewApplicationModalLabel">
                             Review application
@@ -84,7 +106,8 @@
                             <label for="leaseStartDate" class="form-label">Lease start date</label>
                             <input id="leaseStartDate" name="leaseStartDate" type="date"
                                    class="form-control"
-                                   value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                                   value="@DateTime.Today.ToString("yyyy-MM-dd")"
+                                   disabled />
                         </div>
                         <div class="mb-3">
                             <label for="reviewComment" class="form-label">
@@ -135,6 +158,47 @@
         </div>
     </section>
 }
+@if (User.IsInRole("Manager") || Model.Input.CurrentSection == "Summary")
+{
+    <section class="mb-4">
+        <h2 class="h4">Applicants</h2>
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var applicant in Model.Applicants)
+                {
+                    var firstName = string.IsNullOrWhiteSpace(applicant.FirstName)
+                        ? applicant.User?.FirstName
+                        : applicant.FirstName;
+                    var lastName = string.IsNullOrWhiteSpace(applicant.LastName)
+                        ? applicant.User?.LastName
+                        : applicant.LastName;
+                    <tr>
+                        <td>
+                            @if (!string.IsNullOrWhiteSpace(firstName) ||
+                                 !string.IsNullOrWhiteSpace(lastName))
+                            {
+                                @($"{firstName} {lastName}")
+                            }
+                            else
+                            {
+                                <span class="text-muted">Not provided</span>
+                            }
+                        </td>
+                        <td>@applicant.User?.Email</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </section>
+}
 <section class="mb-4">
     <h2 class="h4">Unit details</h2>
     <div class="row g-3">
@@ -161,21 +225,62 @@
     </div>
 </section>
 
-<section>
-    <form method="post">
-        <input type="hidden" asp-for="Input.UnitId" />
-        <input type="hidden" asp-for="Input.ApplicationId" />
-        <input type="hidden" asp-for="Input.CurrentSection" />
-        <input type="hidden" asp-for="Input.ConcurrencyToken" />
-        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-        @if (!Model.IsReadOnly)
-        {
-            @await Html.PartialAsync("Apply/_ApplicationForm", Model)
-            @await Html.PartialAsync("Apply/_ResidenceHistorySection", Model)
-        }
-        @await Html.PartialAsync("Apply/_ApplicationSummary", Model)
+@if (User.IsInRole("Manager") && Model.Applicants.Count > 0 && Model.Input.ApplicationId.HasValue && Model.Applicants.Count > 1)
+{
+    <form method="get">
+        <input type="hidden" name="unitId" value="@Model.Input.UnitId" />
+        <input type="hidden" name="applicationId" value="@Model.Input.ApplicationId" />
+        <input type="hidden" name="section" value="@Model.Input.CurrentSection" />
+        <label for="application-applicant" class="form-label">Applicant</label>
+        <select id="application-applicant" name="applicantId" class="form-select col"
+                onchange="this.form.submit()" style="border-bottom-left-radius: 0;border-bottom-right-radius: 0;">
+            @foreach (var applicant in Model.Applicants)
+            {
+                <option value="@applicant.Id" selected="@(applicant.Id == Model.Input.SelectedApplicantId)">
+                    @($"{applicant.FirstName} {applicant.LastName}" + (applicant.IsPrimary ? " (Primary)" : ""))
+                </option>
+            }
+        </select>
     </form>
-</section>
+}
+<div class="card mb-4" style="@(Model.Applicants.Count > 1 ? "border-top-left-radius: 0;border-top-right-radius: 0;" : null)">
+    <div class="card-body">
+        <section>
+            <form method="post">
+                <input type="hidden" asp-for="Input.UnitId"/>
+                <input type="hidden" asp-for="Input.ApplicationId"/>
+                <input type="hidden" asp-for="Input.SelectedApplicantId"/>
+                <input type="hidden" asp-for="Input.CurrentSection"/>
+                <input type="hidden" asp-for="Input.ConcurrencyToken"/>
+                <input type="hidden" asp-for="Input.ApplicantConcurrencyToken"/>
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                @if (!Model.IsReadOnly && User.IsInRole("Applicant")){
+                    @await Html.PartialAsync("Apply/_ApplicationForm", Model)
+                    @await Html.PartialAsync("Apply/_ResidenceHistorySection", Model)
+                }
+                @await Html.PartialAsync("Apply/_ApplicationSummary", Model)
+            </form>
+        </section>
+    </div>
+</div>
+
+@if (!Model.IsReadOnly && User.IsInRole("Applicant") && Model.Input.ApplicationId.HasValue)
+{
+    foreach (var residence in Model.Input.ResidenceHistory.Where(item => item.Id > 0))
+    {
+        @await Component.InvokeAsync("ConfirmModal", new
+        {
+            modalId = $"deleteResidenceModal-{residence.Id}",
+            text = "Are you sure you want to delete this residence history entry?",
+            action = "Delete",
+            controller = "Residence",
+            controllerAction = "Delete",
+            applicationId = Model.Input.ApplicationId,
+            residenceId = residence.Id,
+            concurrencyToken = Model.Input.ConcurrencyToken
+        })
+    }
+}
 
 @if (User.IsInRole("Manager") && Model.Input.ApplicationId.HasValue)
 {
@@ -240,6 +345,7 @@
             const rows = [...document.querySelectorAll("#residence-history-rows .residence-history-row")];
             rows.forEach((row, index) => {
                 const moveOutDate = row.querySelector(".move-out-date");
+                if (!moveOutDate) return;
                 if (index === 0) {
                     moveOutDate.removeAttribute("required");
                 } else {
@@ -305,6 +411,82 @@
 
         updateMoveOutRequirements();
 
+        const renumberAdditionalApplicants = () => {
+            document.querySelectorAll("#additional-applicants .additional-applicant")
+                .forEach((row, index) => {
+                    row.querySelector("input[type='hidden']").name =
+                        `Input.AdditionalApplicants[${index}].Email`;
+                });
+        };
+
+        document.getElementById("add-additional-applicant")?.addEventListener("click", async () => {
+            const container = document.getElementById("additional-applicants");
+            const emailInput = document.getElementById("additional-applicant-email");
+            const error = document.getElementById("additional-applicant-error");
+            const email = emailInput.value.trim();
+            error.textContent = "";
+            if (!emailInput.checkValidity() || !email) {
+                error.textContent = "Enter a valid email address.";
+                emailInput.focus();
+                return;
+            }
+
+            const primaryEmail = document.querySelector("[name='Input.Email']")?.value
+                .trim().toLowerCase();
+            if (email.toLowerCase() === primaryEmail) {
+                error.textContent = "The primary applicant is already on this application.";
+                emailInput.focus();
+                return;
+            }
+
+            const existingEmails = [...container.querySelectorAll("input[type='hidden']")]
+                .map(input => input.value.toLowerCase());
+            if (existingEmails.includes(email.toLowerCase())) {
+                error.textContent = "That applicant has already been added.";
+                emailInput.focus();
+                return;
+            }
+
+            const accountCheckUrl = "@Url.Page("/Apply/Apply", "CheckApplicantEmail")";
+            const separator = accountCheckUrl.includes("?") ? "&" : "?";
+            const response = await fetch(
+                `${accountCheckUrl}${separator}email=${encodeURIComponent(email)}`);
+            if (!response.ok) {
+                error.textContent = "An account with this email could not be found.";
+                return;
+            }
+            const result = await response.json();
+            if (!result.exists) {
+                bootstrap.Modal.getOrCreateInstance(
+                    document.getElementById("additionalApplicantAccountModal")).show();
+                emailInput.focus();
+                return;
+            }
+
+            const index = container.querySelectorAll(".additional-applicant").length;
+            const row = document.createElement("div");
+            row.className = "additional-applicant d-flex align-items-center gap-2 mb-2";
+            row.innerHTML = `
+                <input type="hidden"
+                       name="Input.AdditionalApplicants[${index}].Email"
+                       value="${escapeHtml(email)}" />
+                <span>${escapeHtml(email)}</span>
+                <button type="button"
+                        class="btn btn-sm btn-outline-danger remove-additional-applicant">
+                    Remove
+                </button>`;
+            container.appendChild(row);
+            renumberAdditionalApplicants();
+            emailInput.value = "";
+        });
+
+        document.getElementById("additional-applicants")?.addEventListener("click", (event) => {
+            if (event.target.classList.contains("remove-additional-applicant")) {
+                event.target.closest(".additional-applicant").remove();
+                renumberAdditionalApplicants();
+            }
+        });
+
         const reviewOutcome = document.getElementById("reviewOutcome");
         const leaseStartDateGroup = document.getElementById("leaseStartDateGroup");
         const leaseStartDate = document.getElementById("leaseStartDate");
@@ -316,6 +498,7 @@
             leaseStartDateGroup?.classList.toggle("d-none", !isApproval);
             if (leaseStartDate) {
                 leaseStartDate.required = isApproval;
+                leaseStartDate.disabled = !isApproval;
             }
             if (reviewComment) {
                 reviewComment.required = commentRequired;

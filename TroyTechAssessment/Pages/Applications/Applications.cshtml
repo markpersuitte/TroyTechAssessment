@@ -8,7 +8,7 @@
 <h1>Applications</h1>
 
 <form method="get" class="mb-3">
-    <div class="row g-2 align-items-end">
+    <div class="row g-2 align-items-start">
         <div class="col-md-3">
             <label asp-for="SearchTerm" class="form-label">Search</label>
             <input asp-for="SearchTerm" class="form-control" placeholder="Search all fields" />
@@ -41,9 +41,11 @@
                 <option value="asc">Ascending</option>
             </select>
         </div>
-        <div class="col-md-2">
-            @Html.LabelFor(model => model.MyClaims, "My Claims")
-            @Html.CheckBoxFor(model => model.MyClaims)
+        <div class="col-md-3">
+            <label asp-for="MyClaims" class="form-label d-block">Show only my claims</label>
+            <div class="form-check">
+                @Html.CheckBoxFor(model => model.MyClaims, new{ @class = "form-check-input", @style = "height:1.8rem;width:1.8rem" })
+            </div>
         </div>
     </div>
 </form>
@@ -60,6 +62,7 @@ else
             <tr>
                 <th>Actions</th>
                 <th>Applicant</th>
+                <th>Applicants</th>
                 <th>Email</th>
                 <th>Phone</th>
                 <th>Property</th>
@@ -98,10 +101,14 @@ else
                                class="btn btn-sm btn-secondary">View</a>
                         }
                         else if (User.IsInRole("Applicant") &&
-                                 string.EqualsAny(application.ApplicationStatus.Status, ["Draft", "Returned"], StringComparison.OrdinalIgnoreCase))
+                                 (string.Equals(application.ApplicationStatus.Status, "Draft",
+                                      StringComparison.OrdinalIgnoreCase) ||
+                                  string.Equals(application.ApplicationStatus.Status, "Returned",
+                                      StringComparison.OrdinalIgnoreCase)))
                         {
                             <a asp-page="/Apply/Apply" asp-route-unitId="@application.UnitId"
                                asp-route-applicationId="@application.Id"
+                               asp-route-section="Application"
                                class="btn btn-sm btn-primary">Edit</a>
                         }
                         else if (User.IsInRole("Applicant"))
@@ -111,9 +118,20 @@ else
                                class="btn btn-sm btn-secondary">View</a>
                         }
                     </td>
-                    <td>@application.FirstName @application.LastName</td>
-                    <td>@application.Email</td>
-                    <td>@application.PhoneNumber</td>
+                    @{
+                        var primaryApplicant = application.Applicants
+                            .OrderByDescending(item => item.IsPrimary)
+                            .ThenBy(item => item.Id)
+                            .FirstOrDefault();
+                    }
+                    <td>
+                        @(primaryApplicant is null
+                            ? $"{application.FirstName} {application.LastName}"
+                            : $"{primaryApplicant.FirstName} {primaryApplicant.LastName}")
+                    </td>
+                    <td class="text-center">@application.Applicants.Count</td>
+                    <td>@(primaryApplicant?.User.Email ?? application.Email)</td>
+                    <td>@(primaryApplicant?.PhoneNumber ?? application.PhoneNumber)</td>
                     <td>@application.Unit.Property.Name</td>
                     <td>@application.Unit.Number</td>
                     <td>@application.ApplicationStatus.Status</td>
@@ -133,6 +151,7 @@ else
                                         <input type="hidden" name="statusId" value="@Model.StatusId" />
                                         <input type="hidden" name="propertyId" value="@Model.PropertyId" />
                                         <input type="hidden" name="searchTerm" value="@Model.SearchTerm" />
+                                        <input type="hidden" name="myClaims" value="@Model.MyClaims" />
                                         <button type="submit" class="btn btn-sm btn-outline-primary">Claim</button>
                                     </form>
                                 }
@@ -147,6 +166,7 @@ else
                                         <input type="hidden" name="statusId" value="@Model.StatusId" />
                                         <input type="hidden" name="propertyId" value="@Model.PropertyId" />
                                         <input type="hidden" name="searchTerm" value="@Model.SearchTerm" />
+                                        <input type="hidden" name="myClaims" value="@Model.MyClaims" />
                                         <button type="submit" class="btn btn-sm btn-outline-secondary">Release</button>
                                     </form>
                                 }
@@ -180,7 +200,8 @@ else
             propertyId = Model.PropertyId,
             searchTerm = Model.SearchTerm,
             sort = Model.Sort,
-            direction = Model.Direction
+            direction = Model.Direction,
+            myClaims = Model.MyClaims
         })!
     })
 }

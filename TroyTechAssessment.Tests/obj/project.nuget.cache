@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "G0bb6p8YU6s=",
+  "dgSpecHash": "2qGFxccJCFY=",
   "success": true,
   "projectFilePath": "/home/mark/RiderProjects/TroyTechAssessment/TroyTechAssessment.Tests/TroyTechAssessment.Tests.csproj",
   "expectedPackageFiles": [
@@ -21,6 +21,7 @@
     "/home/mark/.nuget/packages/microsoft.entityframeworkcore/10.0.12/microsoft.entityframeworkcore.10.0.12.nupkg.sha512",
     "/home/mark/.nuget/packages/microsoft.entityframeworkcore.abstractions/10.0.12/microsoft.entityframeworkcore.abstractions.10.0.12.nupkg.sha512",
     "/home/mark/.nuget/packages/microsoft.entityframeworkcore.analyzers/10.0.12/microsoft.entityframeworkcore.analyzers.10.0.12.nupkg.sha512",
+    "/home/mark/.nuget/packages/microsoft.entityframeworkcore.inmemory/10.0.12/microsoft.entityframeworkcore.inmemory.10.0.12.nupkg.sha512",
     "/home/mark/.nuget/packages/microsoft.entityframeworkcore.relational/10.0.12/microsoft.entityframeworkcore.relational.10.0.12.nupkg.sha512",
     "/home/mark/.nuget/packages/microsoft.entityframeworkcore.sqlserver/10.0.12/microsoft.entityframeworkcore.sqlserver.10.0.12.nupkg.sha512",
     "/home/mark/.nuget/packages/microsoft.extensions.caching.abstractions/10.0.12/microsoft.extensions.caching.abstractions.10.0.12.nupkg.sha512",

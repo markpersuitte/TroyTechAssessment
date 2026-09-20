@@ -28,4 +28,16 @@ else if (Model.PropertyId.HasValue)
 {
     <input type="hidden" name="Input.UnitTypeId" value="@Model.UnitTypeId" />
 }
+@if (Model.ApplicationId.HasValue)
+{
+    <input type="hidden" name="applicationId" value="@Model.ApplicationId" />
+}
+@if (Model.ResidenceId.HasValue)
+{
+    <input type="hidden" name="residenceId" value="@Model.ResidenceId" />
+}
+@if (!string.IsNullOrWhiteSpace(Model.ConcurrencyToken))
+{
+    <input type="hidden" name="X-Concurrency-Token" value="@Model.ConcurrencyToken" />
+}
 <button type="submit" class="btn btn-danger">Confirm</button>

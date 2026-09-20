@@ -250,6 +250,74 @@ namespace TroyTechAssessment.Migrations
                     b.ToTable("Applications");
                 });
 
+            modelBuilder.Entity("TroyTechAssessment.Data.ApplicationApplicant", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ApplicationId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CurrentCity")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("CurrentState")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("CurrentStreetAddress")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("CurrentZipCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsPrimary")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasMaxLength(25)
+                        .HasColumnType("nvarchar(25)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("ApplicationId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("ApplicationApplicants");
+                });
+
             modelBuilder.Entity("TroyTechAssessment.Data.ApplicationResidenceHistory", b =>
                 {
                     b.Property<int>("Id")
@@ -257,6 +325,9 @@ namespace TroyTechAssessment.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ApplicantId")
+                        .HasColumnType("int");
 
                     b.Property<int>("ApplicationId")
                         .HasColumnType("int");
@@ -303,6 +374,8 @@ namespace TroyTechAssessment.Migrations
                         .HasColumnType("nvarchar(10)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ApplicantId");
 
                     b.HasIndex("ApplicationId");
 
@@ -757,13 +830,39 @@ namespace TroyTechAssessment.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("TroyTechAssessment.Data.ApplicationApplicant", b =>
+                {
+                    b.HasOne("TroyTechAssessment.Data.Application", "Application")
+                        .WithMany("Applicants")
+                        .HasForeignKey("ApplicationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TroyTechAssessment.Data.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Application");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("TroyTechAssessment.Data.ApplicationResidenceHistory", b =>
                 {
+                    b.HasOne("TroyTechAssessment.Data.ApplicationApplicant", "Applicant")
+                        .WithMany()
+                        .HasForeignKey("ApplicantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
                     b.HasOne("TroyTechAssessment.Data.Application", "Application")
                         .WithMany("ApplicationResidenceHistory")
                         .HasForeignKey("ApplicationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Applicant");
 
                     b.Navigation("Application");
                 });
@@ -873,6 +972,8 @@ namespace TroyTechAssessment.Migrations
 
             modelBuilder.Entity("TroyTechAssessment.Data.Application", b =>
                 {
+                    b.Navigation("Applicants");
+
                     b.Navigation("ApplicationResidenceHistory");
 
                     b.Navigation("Lease");
