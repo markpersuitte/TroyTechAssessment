@@ -582,6 +582,7 @@ public class ApplyModel : PageModel
             {
                 Application = application,
                 UserId = userId,
+                User = user,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 IsPrimary = true
@@ -684,7 +685,9 @@ public class ApplyModel : PageModel
         {
             application.FirstName = applicant.FirstName;
             application.LastName = applicant.LastName;
-            application.Email = applicant.User.Email ?? string.Empty;
+            application.Email = applicant.User?.Email
+                ?? _db.Users.Local.SingleOrDefault(item => item.Id == currentUserId)?.Email
+                ?? application.Email;
             application.PhoneNumber = applicant.PhoneNumber;
             application.CurrentStreetAddress = applicant.CurrentStreetAddress;
             application.CurrentCity = applicant.CurrentCity;

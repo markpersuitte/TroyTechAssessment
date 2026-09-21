@@ -390,38 +390,48 @@ namespace TroyTechAssessment.Migrations
                         onDelete: ReferentialAction.Restrict);
                 });
 
-            migrationBuilder.InsertData(
-                table: "ApplicationStatuses",
-                columns: new[] { "Id", "Status" },
-                values: new object[,]
-                {
-                    { 1, "Draft" },
-                    { 2, "Submitted" },
-                    { 3, "Returned" },
-                    { 4, "Approved" },
-                    { 5, "Denied" },
-                    { 6, "Withdrawn" }
-                });
+            migrationBuilder.Sql("""
+                IF NOT EXISTS (SELECT 1 FROM [ApplicationStatuses] WHERE [Id] = 1)
+                BEGIN
+                    SET IDENTITY_INSERT [ApplicationStatuses] ON;
+                    INSERT INTO [ApplicationStatuses] ([Id], [Status])
+                    VALUES
+                        (1, 'Draft'),
+                        (2, 'Submitted'),
+                        (3, 'Returned'),
+                        (4, 'Approved'),
+                        (5, 'Denied'),
+                        (6, 'Withdrawn');
+                    SET IDENTITY_INSERT [ApplicationStatuses] OFF;
+                END;
+                """);
 
-            migrationBuilder.InsertData(
-                table: "AspNetRoles",
-                columns: new[] { "Id", "ConcurrencyStamp", "Name", "NormalizedName" },
-                values: new object[,]
-                {
-                    { new Guid("00000000-0000-0000-0000-000000000001"), "manager-role-concurrency", "Manager", "MANAGER" },
-                    { new Guid("00000000-0000-0000-0000-000000000002"), "applicant-role-concurrency", "Applicant", "APPLICANT" }
-                });
+            migrationBuilder.Sql("""
+                IF NOT EXISTS (
+                    SELECT 1
+                    FROM [AspNetRoles]
+                    WHERE [Id] = '00000000-0000-0000-0000-000000000001')
+                BEGIN
+                    INSERT INTO [AspNetRoles] ([Id], [ConcurrencyStamp], [Name], [NormalizedName])
+                    VALUES
+                        ('00000000-0000-0000-0000-000000000001', 'manager-role-concurrency', 'Manager', 'MANAGER'),
+                        ('00000000-0000-0000-0000-000000000002', 'applicant-role-concurrency', 'Applicant', 'APPLICANT');
+                END;
+                """);
 
-            migrationBuilder.InsertData(
-                table: "UnitTypes",
-                columns: new[] { "Id", "Active", "UnitTypeName" },
-                values: new object[,]
-                {
-                    { 1, true, "Type A" },
-                    { 2, true, "Type B" },
-                    { 3, true, "Type C" },
-                    { 4, true, "Type D" }
-                });
+            migrationBuilder.Sql("""
+                IF NOT EXISTS (SELECT 1 FROM [UnitTypes] WHERE [Id] = 1)
+                BEGIN
+                    SET IDENTITY_INSERT [UnitTypes] ON;
+                    INSERT INTO [UnitTypes] ([Id], [Active], [UnitTypeName])
+                    VALUES
+                        (1, 1, 'Type A'),
+                        (2, 1, 'Type B'),
+                        (3, 1, 'Type C'),
+                        (4, 1, 'Type D');
+                    SET IDENTITY_INSERT [UnitTypes] OFF;
+                END;
+                """);
 
             migrationBuilder.CreateIndex(
                 name: "IX_ApplicationResidenceHistory_ApplicationId",

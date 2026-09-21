@@ -15,6 +15,8 @@ namespace TroyTechAssessment.Migrations
         {
             // default passwords are P@ssw0rd!
             migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM [AspNetUsers] WHERE [Id] = '10000000-0000-0000-0000-000000000002')
+BEGIN
 INSERT INTO [AspNetUsers] ([Id], [FirstName], [LastName], [UserName], [NormalizedUserName], [Email], [NormalizedEmail], [EmailConfirmed], [PasswordHash], [SecurityStamp], [ConcurrencyStamp], [PhoneNumber], [PhoneNumberConfirmed], [TwoFactorEnabled], [LockoutEnd], [LockoutEnabled], [AccessFailedCount])
 VALUES
     ('10000000-0000-0000-0000-000000000002', 'Ava', 'Hughes', 'manager1@troytech.local', 'MANAGER1@TROYTECH.LOCAL', 'manager1@troytech.local', 'MANAGER1@TROYTECH.LOCAL', 0, 'AQAAAAIAAYagAAAAEIK/kzjtE3fN/N8M5sEI59xQycXxVp2U/7iayV9dBsinM5sbkxGVz9KVRafmFj2ZfA==', 'manager-1-stamp', 'manager-1-concurrency', '555-100-1001', 0, 0, NULL, 0, 0),
@@ -23,9 +25,12 @@ VALUES
     ('10000000-0000-0000-0000-000000000012', 'Lucas', 'Chen', 'applicant2@troytech.local', 'APPLICANT2@TROYTECH.LOCAL', 'applicant2@troytech.local', 'APPLICANT2@TROYTECH.LOCAL', 0, 'AQAAAAIAAYagAAAAEIK/kzjtE3fN/N8M5sEI59xQycXxVp2U/7iayV9dBsinM5sbkxGVz9KVRafmFj2ZfA==', 'applicant-2-stamp', 'applicant-2-concurrency', '555-200-2002', 0, 0, NULL, 0, 0),
     ('10000000-0000-0000-0000-000000000013', 'Mia', 'Rivera', 'applicant3@troytech.local', 'APPLICANT3@TROYTECH.LOCAL', 'applicant3@troytech.local', 'APPLICANT3@TROYTECH.LOCAL', 0, 'AQAAAAIAAYagAAAAEIK/kzjtE3fN/N8M5sEI59xQycXxVp2U/7iayV9dBsinM5sbkxGVz9KVRafmFj2ZfA==', 'applicant-3-stamp', 'applicant-3-concurrency', '555-200-2003', 0, 0, NULL, 0, 0),
     ('10000000-0000-0000-0000-000000000014', 'Owen', 'Martin', 'applicant4@troytech.local', 'APPLICANT4@TROYTECH.LOCAL', 'applicant4@troytech.local', 'APPLICANT4@TROYTECH.LOCAL', 0, 'AQAAAAIAAYagAAAAEIK/kzjtE3fN/N8M5sEI59xQycXxVp2U/7iayV9dBsinM5sbkxGVz9KVRafmFj2ZfA==', 'applicant-4-stamp', 'applicant-4-concurrency', '555-200-2004', 0, 0, NULL, 0, 0);
+END;
 ");
 
             migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM [AspNetUserRoles] WHERE [UserId] = '10000000-0000-0000-0000-000000000002' AND [RoleId] = '00000000-0000-0000-0000-000000000001')
+BEGIN
 INSERT INTO [AspNetUserRoles] ([UserId], [RoleId])
 VALUES
     ('10000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001'),
@@ -34,9 +39,12 @@ VALUES
     ('10000000-0000-0000-0000-000000000012', '00000000-0000-0000-0000-000000000002'),
     ('10000000-0000-0000-0000-000000000013', '00000000-0000-0000-0000-000000000002'),
     ('10000000-0000-0000-0000-000000000014', '00000000-0000-0000-0000-000000000002');
+END;
 ");
 
             migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM [AspNetUsers] WHERE [Id] = '10000000-0000-0000-0000-000000000074')
+BEGIN
 DECLARE @applicantNumber int = 19;
 DECLARE @userId uniqueidentifier;
 WHILE @applicantNumber <= 74
@@ -69,9 +77,12 @@ BEGIN
 
     SET @applicantNumber += 1;
 END;
+END;
 ");
 
-            migrationBuilder.Sql(@"SET IDENTITY_INSERT [Properties] ON;
+            migrationBuilder.Sql(@"IF NOT EXISTS (SELECT 1 FROM [Properties] WHERE [Id] = 1)
+BEGIN
+SET IDENTITY_INSERT [Properties] ON;
 INSERT INTO [Properties] ([Id], [Name], [StreetAddress], [City], [State], [ZipCode])
 VALUES
     (1, 'Oak Grove Apartments', '101 Oak Grove Drive', 'Seattle', 'WA', '98101'),
@@ -79,9 +90,12 @@ VALUES
     (3, 'Pine Crest Homes', '88 Pine Crest Lane', 'Bellevue', 'WA', '98004'),
     (4, 'Cedar Valley Residences', '410 Cedar Valley Road', 'Redmond', 'WA', '98052'),
     (5, 'Riverstone Commons', '725 Riverstone Boulevard', 'Kirkland', 'WA', '98033');
-SET IDENTITY_INSERT [Properties] OFF;");
+SET IDENTITY_INSERT [Properties] OFF;
+END;");
 
             migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM [ManagerProperties] WHERE [ManagerId] = '10000000-0000-0000-0000-000000000002' AND [PropertyId] = 5)
+BEGIN
 INSERT INTO [ManagerProperties] ([ManagerId], [PropertyId])
 VALUES
     ('10000000-0000-0000-0000-000000000002', 1),
@@ -89,9 +103,12 @@ VALUES
     ('10000000-0000-0000-0000-000000000002', 4),
     ('10000000-0000-0000-0000-000000000003', 2),
     ('10000000-0000-0000-0000-000000000003', 3),
-    ('10000000-0000-0000-0000-000000000003', 5);");
+    ('10000000-0000-0000-0000-000000000003', 5);
+END;");
 
-            migrationBuilder.Sql(@"SET IDENTITY_INSERT [Units] ON;
+            migrationBuilder.Sql(@"IF NOT EXISTS (SELECT 1 FROM [Units] WHERE [Id] = 1)
+BEGIN
+SET IDENTITY_INSERT [Units] ON;
 INSERT INTO [Units] ([Id], [Number], [Bedrooms], [MonthlyRent], [PropertyId], [UnitTypeId])
 VALUES
     (1, '101', 1, 1650.00, 1, 1),
@@ -174,9 +191,12 @@ VALUES
     (78, '1505', 1, 2125.00, 3, 2),
     (79, '1601', 2, 2250.00, 4, 3),
     (80, '1602', 3, 2375.00, 5, 4);
-SET IDENTITY_INSERT [Units] OFF;");
+SET IDENTITY_INSERT [Units] OFF;
+END;");
 
-            migrationBuilder.Sql(@"SET IDENTITY_INSERT [Applications] ON;
+            migrationBuilder.Sql(@"IF NOT EXISTS (SELECT 1 FROM [Applications] WHERE [Id] = 1)
+BEGIN
+SET IDENTITY_INSERT [Applications] ON;
 INSERT INTO [Applications] ([Id], [FirstName], [LastName], [Email], [PhoneNumber], [CurrentStreetAddress], [CurrentCity], [CurrentState], [CurrentZipCode], [UserId], [UnitId], [ApplicationStatusId])
 VALUES
     (1, 'Ella', 'Brown', 'applicant1@troytech.local', '555-200-2001', '1400 Pine Street', 'Seattle', 'WA', '98101', '10000000-0000-0000-0000-000000000011', 1, 1),
@@ -185,9 +205,12 @@ VALUES
     (4, 'Owen', 'Martin', 'applicant4@troytech.local', '555-200-2004', '780 Harbor Rd', 'Bellevue', 'WA', '98007', '10000000-0000-0000-0000-000000000014', 4, 4),
     (5, 'Ella', 'Brown', 'applicant1@troytech.local', '555-200-2001', '1400 Pine Street', 'Seattle', 'WA', '98101', '10000000-0000-0000-0000-000000000011', 5, 5),
     (6, 'Lucas', 'Chen', 'applicant2@troytech.local', '555-200-2002', '3600 Alder Way', 'Seattle', 'WA', '98104', '10000000-0000-0000-0000-000000000012', 6, 6);
-SET IDENTITY_INSERT [Applications] OFF;");
+SET IDENTITY_INSERT [Applications] OFF;
+END;");
 
             migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM [Applications] WHERE [Id] = 60)
+BEGIN
 SET IDENTITY_INSERT [Applications] ON;
 DECLARE @applicationId int = 7;
 DECLARE @userId uniqueidentifier;
@@ -229,9 +252,12 @@ BEGIN
     SET @applicationId += 1;
 END;
 SET IDENTITY_INSERT [Applications] OFF;
+END;
 ");
 
-            migrationBuilder.Sql(@"SET IDENTITY_INSERT [ApplicationResidenceHistory] ON;
+            migrationBuilder.Sql(@"IF NOT EXISTS (SELECT 1 FROM [ApplicationResidenceHistory] WHERE [Id] = 1)
+BEGIN
+SET IDENTITY_INSERT [ApplicationResidenceHistory] ON;
 INSERT INTO [ApplicationResidenceHistory] ([Id], [ApplicationId], [StreetAddress], [City], [State], [ZipCode], [LandlordFirstName], [LandlordLastName], [LandlordPhoneNumber], [MoveInDate], [MoveOutDate])
 VALUES
     (1, 1, '500 Cedar Avenue', 'Spokane', 'WA', '99201', 'Harold', 'Peters', '555-111-1111', '2023-01-15', '2024-12-31'),
@@ -240,9 +266,12 @@ VALUES
     (4, 4, '1800 Poplar Street', 'Renton', 'WA', '98057', 'Julia', 'Stone', '555-111-4444', '2022-08-01', '2024-10-31'),
     (5, 5, '950 Ash Lane', 'Olympia', 'WA', '98501', 'Rafael', 'Mendoza', '555-111-5555', '2020-02-10', '2023-04-01'),
     (6, 6, '1177 Spruce Place', 'Bellingham', 'WA', '98225', 'Lena', 'Foster', '555-111-6666', '2021-09-01', '2023-10-01');
-SET IDENTITY_INSERT [ApplicationResidenceHistory] OFF;");
+SET IDENTITY_INSERT [ApplicationResidenceHistory] OFF;
+END;");
 
-            migrationBuilder.Sql(@"SET IDENTITY_INSERT [ApplicationStatusHistory] ON;
+            migrationBuilder.Sql(@"IF NOT EXISTS (SELECT 1 FROM [ApplicationStatusHistory] WHERE [Id] = 1)
+BEGIN
+SET IDENTITY_INSERT [ApplicationStatusHistory] ON;
 INSERT INTO [ApplicationStatusHistory] ([Id], [ApplicationId], [ApplicationStatusId], [ChangedByUserId], [ChangedAtUtc], [Comment])
 VALUES
     (1, 1, 1, '10000000-0000-0000-0000-000000000011', '2026-01-10T12:00:00Z', 'Started application draft.'),
@@ -251,9 +280,12 @@ VALUES
     (4, 4, 4, '10000000-0000-0000-0000-000000000002', '2026-01-13T11:45:00Z', 'Approved and issued lease.'),
     (5, 5, 5, '10000000-0000-0000-0000-000000000003', '2026-01-14T17:05:00Z', 'Application denied due to insufficient income verification.'),
     (6, 6, 6, '10000000-0000-0000-0000-000000000012', '2026-01-15T08:15:00Z', 'Applicant withdrew the application.');
-SET IDENTITY_INSERT [ApplicationStatusHistory] OFF;");
+SET IDENTITY_INSERT [ApplicationStatusHistory] OFF;
+END;");
 
             migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM [ApplicationStatusHistory] WHERE [Id] = 60)
+BEGIN
 SET IDENTITY_INSERT [ApplicationStatusHistory] ON;
 DECLARE @historyId int = 7;
 DECLARE @userId uniqueidentifier;
@@ -275,15 +307,21 @@ BEGIN
     SET @historyId += 1;
 END;
 SET IDENTITY_INSERT [ApplicationStatusHistory] OFF;
+END;
 ");
 
-            migrationBuilder.Sql(@"SET IDENTITY_INSERT [Leases] ON;
+            migrationBuilder.Sql(@"IF NOT EXISTS (SELECT 1 FROM [Leases] WHERE [Id] = 1)
+BEGIN
+SET IDENTITY_INSERT [Leases] ON;
 INSERT INTO [Leases] ([Id], [UnitId], [ApplicationId], [StartDate], [EndDate], [CreatedAtUtc])
 VALUES
     (1, 4, 4, '2026-02-01', '2027-01-31', '2026-01-13T11:50:00Z');
-SET IDENTITY_INSERT [Leases] OFF;");
+SET IDENTITY_INSERT [Leases] OFF;
+END;");
 
             migrationBuilder.Sql(@"
+IF NOT EXISTS (SELECT 1 FROM [Leases] WHERE [Id] = 10)
+BEGIN
 SET IDENTITY_INSERT [Leases] ON;
 DECLARE @leaseId int = 2;
 WHILE @leaseId <= 10
@@ -299,6 +337,7 @@ BEGIN
     SET @leaseId += 1;
 END;
 SET IDENTITY_INSERT [Leases] OFF;
+END;
 ");
         }
 
