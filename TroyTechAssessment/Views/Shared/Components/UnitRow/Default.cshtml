@@ -10,10 +10,20 @@
 <tr>
     @if (User.IsInRole("Applicant"))
     {
+        var application = Model.ApplicantApplication;
+        var hasExistingApplication = application is not null;
+        var isSubmitted = application?.StatusId == 2;
+        var buttonText = hasExistingApplication
+            ? isSubmitted ? "View" : "Continue"
+            : "Apply";
+        var buttonClass = hasExistingApplication
+            ? isSubmitted ? "btn-outline-secondary" : "btn-outline-primary"
+            : "btn-outline-success";
+
         <td>
-            <a class="btn btn-sm btn-outline-success"
-               href="@Url.Page("/Apply/Apply", new { unitId = unit.Id })"
-               aria-label="Apply for unit @unit.Number">Apply</a>
+            <a class="btn btn-sm @buttonClass"
+               href="@Url.Page("/Apply/Apply", new { unitId = unit.Id, applicationId = application?.Id })"
+               aria-label="@buttonText application for unit @unit.Number">@buttonText</a>
         </td>
     }
     <td title="@($"{unit.Property.StreetAddress} {unit.Property.City} {unit.Property.State}")">@unit.Property.Name</td>
